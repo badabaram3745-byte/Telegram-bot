@@ -206,6 +206,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount INTEGER,
         bonus INTEGER DEFAULT 0, photo TEXT, status TEXT DEFAULT 'pending', created INTEGER);
     CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT);
+    CREATE TABLE IF NOT EXISTS support_tickets(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, 
+        message TEXT, created INTEGER, status TEXT DEFAULT 'open');
     """)
     for k, v in DEFAULT_SETTINGS.items():
         ex("INSERT OR IGNORE INTO settings(k,v) VALUES(?,?)", (k, v))
