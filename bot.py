@@ -206,8 +206,6 @@ def init_db():
     CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount INTEGER,
         bonus INTEGER DEFAULT 0, photo TEXT, status TEXT DEFAULT 'pending', created INTEGER);
     CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT);
-    CREATE TABLE IF NOT EXISTS support_tickets(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, 
-        message TEXT, created INTEGER, status TEXT DEFAULT 'open');
     """)
     for k, v in DEFAULT_SETTINGS.items():
         ex("INSERT OR IGNORE INTO settings(k,v) VALUES(?,?)", (k, v))
@@ -632,7 +630,6 @@ async def show(update: Update, text, kb=None):
 
 def set_state(ctx, *s): ctx.user_data["state"] = s
 def clear_state(ctx): ctx.user_data.pop("state", None)
-def get_state(ctx): return ctx.user_data.get("state", ())
 
 # ───────────────────────── اتصال به پنل‌ها ─────────────────────────
 def _http(p):
@@ -1175,15 +1172,6 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return await show(update, f"✅ سرویس <code>{html.escape(s['username'])}</code> به کاربر <code>{b}</code> منتقل شد.", back_more())
     if d == "test": return await do_test(update, ctx, uid)
     if d == "more": return await page_more(update, uid)
-    if d == "support": 
-        set_state(ctx, "support")
-        return await show(update, render("support_intro"), [row(btn("بازگشت", "home", RED, "back"))])
-    if d.startswith("del:"):
-        sid = int(d[4:])
-        s = q("SELECT * FROM services WHERE id=?", (sid,), True)
-        if not s or s["user_id"] != uid: return
-        ex("DELETE FROM services WHERE id=?", (sid,))
-        return await show(update, render("support_sent"), [row(btn("بازگشت", "subs", RED, "back"))])
     if d in ("help", "rules"): return await show(update, render(d), [row(btn("بازگشت", "more", RED, "back"))])
     if d == "ref":
         me = await ctx.bot.get_me()
