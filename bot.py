@@ -44,6 +44,8 @@ BTN_GROUPS = {"pl": "دکمه‌های مدت (ماهه)", "bp": "دکمه‌ه�
               "plv": "لیست پلن‌ها (ادمین)", "set": "دکمه‌های تنظیمات (ادمین)", "tg": "دکمه‌های روشن/خاموش (ادمین)",
               "pn": "نوع پنل (ادمین)", "soon": "پنل‌های به‌زودی", "tx": "لیست متن‌ها (ادمین)",
               "em": "لیست ایموجی‌ها (ادمین)", "noop": "عنوان‌ها و برچسب‌های صفحه", "url": "دکمه‌های لینک"}
+# ➕ گروه رنگ دکمه‌های جدید (تمدید / کد تخفیف)
+BTN_GROUPS.update({"rnp": "لیست پلن‌های تمدید", "dcv": "لیست کدهای تخفیف (ادمین)", "dcp": "دکمه‌های درصد تخفیف (ادمین)"})
 try:
     _SRC = open(os.path.abspath(__file__), encoding="utf-8").read()
 except Exception:
@@ -70,6 +72,8 @@ EMOJI = {
     "ref": "🤝", "phone": "📱", "chest": "🧰", "bag": "🛍",
     "ip": "📍", "usage": "📊", "mysettings": "⚙️", "remind": "🔔", "transfer": "🔁", "ipbox": "🛡",  # ➕
 }
+# ➕ ایموجی دکمه‌های جدید (تمدید، حذف، تغییر نام، کد تخفیف، تراکنش‌ها)
+EMOJI.update({"renew": "🔄", "delsrv": "🗑", "rename": "📝", "discount": "🎟", "trx": "🧾"})
 
 # ───────────────────────── متن‌های قابل ویرایش ─────────────────────────
 # متغیرها: {BOT} {USER} {ID} {BALANCE} {PRICE} {GB} {DAYS} {LINK} {SERVICES} {DATE} ...
@@ -142,6 +146,37 @@ TEXTS = {
         "📡 اپراتور/سازمان: <b>{ISP}</b>\n🔢 شماره ASN: <code>{ASN}</code>\n🕒 منطقه زمانی: <b>{TZ}</b></blockquote>\n\n"
         "<blockquote>🟩 موقعیت نمایش‌داده‌شده تقریبی است و براساس IP محاسبه می‌شود.</blockquote>"),
 }
+
+# ➕ متن‌های بخش‌های جدید (قابل ویرایش از پنل مدیریت > ویرایش متن‌ها)
+TEXTS.update({
+    "discount_ask": ("درخواست کد تخفیف",
+        "{E:discount} <b>کد تخفیف</b>\n\nلطفاً کد تخفیف خود را وارد کنید {E:point}"),
+    "discount_ok": ("کد تخفیف اعمال شد",
+        "<blockquote>{E:discount} کد تخفیف <code>{CODE}</code> اعمال شد\n{E:price} قیمت اصلی: <s>{ORIG}</s> تومان\n"
+        "🔻 تخفیف: <b>{PERCENT}%</b> ({DISCOUNT} تومان)\n{E:ok} مبلغ نهایی: <b>{PRICE}</b> تومان</blockquote>"),
+    "discount_bad": ("کد تخفیف نامعتبر", "{E:no} {REASON}\nدوباره کد را بفرستید یا برگردید."),
+    "renew_plans": ("انتخاب پلن تمدید",
+        "{E:renew} <b>تمدید سرویس</b> <code>{NAME}</code>\n\nپلن تمدید را انتخاب کنید.\n"
+        "<blockquote>با تمدید، حجم سرویس به حجم پلن جدید ریست می‌شود و روزهای پلن به زمان باقی‌مانده اضافه می‌شود.</blockquote>\n"
+        "{E:chest} موجودی فعلی شما: <b>{BALANCE}</b> تومان"),
+    "renew_invoice": ("فاکتور تمدید",
+        "🧾 <b>فاکتور تمدید</b>\n<blockquote>👤 سرویس: <code>{NAME}</code>\n{E:volume} حجم جدید: <b>{GB} گیگ</b>\n"
+        "{E:time} مدت: <b>{DAYS} روز</b>\n📅 انقضای جدید: <b>{EXPIRE}</b>\n{E:price} مبلغ: <b>{PRICE}</b> تومان\n"
+        "{E:card} موجودی شما: <b>{BALANCE}</b> تومان</blockquote>\n\nبرای تمدید روی دکمه زیر بزنید."),
+    "renew_done": ("تمدید موفق",
+        "{E:ok} <b>سرویس با موفقیت تمدید شد</b>\n<blockquote>👤 سرویس: <code>{NAME}</code>\n{E:volume} حجم: {GB} گیگ\n"
+        "{E:time} انقضای جدید: {EXPIRE}\n{E:price} مبلغ: {PRICE} تومان</blockquote>"),
+    "delete_confirm": ("تأیید حذف سرویس",
+        "{E:delsrv} <b>حذف سرویس</b>\n\nآیا مطمئنی سرویس <code>{NAME}</code> حذف شود؟\n"
+        "<blockquote>⚠️ سرویس هم از ربات و هم از پنل پاک می‌شود و قابل برگشت نیست.</blockquote>"),
+    "delete_done": ("سرویس حذف شد", "{E:ok} سرویس <code>{NAME}</code> از ربات و پنل حذف شد."),
+    "rename_ask": ("درخواست نام جدید سرویس",
+        "{E:rename} <b>تغییر نام سرویس</b>\n\nنام فعلی: <code>{NAME}</code>\nنام جدید را بفرستید (حداکثر ۳۲ کاراکتر):"),
+    "rename_done": ("تغییر نام موفق", "{E:ok} نام سرویس به <b>{NAME}</b> تغییر کرد."),
+    "trx_head": ("عنوان تراکنش‌ها (ادمین)", "{E:trx} <b>تراکنش‌ها | {PERIOD}</b>"),
+    "dc_admin": ("عنوان کدهای تخفیف (ادمین)",
+        "{E:discount} <b>کدهای تخفیف</b>\nروی هر کد بزن برای مدیریت، یا کد جدید بساز."),
+})
 
 DEFAULT_SETTINGS = {
     "card_number": "6037-0000-0000-0000", "card_owner": "نام صاحب کارت",
@@ -769,6 +804,7 @@ def admin_kb():
         row(btn("تنظیمات عمومی", "a:gen", None, "settings")),
         row(btn("رنگ دکمه‌ها", "a:color", None, "settings"), btn("مدیریت ادمین‌ها", "a:admins", None, "admin")),
         row(btn("آدرس سرور اطلاعات IP", "set:ip_web_url", None, "ip")),
+        row(btn("تراکنش‌ها", "a:trx", BLUE, "trx"), btn("کدهای تخفیف", "a:dc", GREEN, "discount")),  # ➕
         row(btn("بازگشت", "home", RED, "back")),
     ]
 
@@ -834,10 +870,12 @@ async def page_invoice(update, uid, plan_id, panel_id):
     p = q("SELECT * FROM plans WHERE id=?", (plan_id,), True)
     pn = q("SELECT * FROM panels WHERE id=?", (panel_id,), True)
     u = get_user(uid)
-    text = render("invoice", GB=p["gb"], DAYS=p["days"], PRICE=money(p["price"]), BALANCE=money(u["balance"]),
-                  LOCATION=html.escape(pn["name"]))
+    price, dcline, _ = dc_price(uid, p["price"])  # ➕ کد تخفیف
+    text = render("invoice", GB=p["gb"], DAYS=p["days"], PRICE=money(price), BALANCE=money(u["balance"]),
+                  LOCATION=html.escape(pn["name"])) + dcline
     kb = [row(btn("پرداخت از کیف پول", f"pay:{plan_id}:{panel_id}", GREEN, "ok")),
           row(btn("افزایش موجودی", "topup", None, "wallet")),
+          row(btn("استفاده از کد تخفیف", f"dc:b:{plan_id}:{panel_id}", BLUE, "discount")),  # ➕
           row(btn("بازگشت", "buy", RED, "back"))]
     await show(update, text, kb)
 
@@ -888,19 +926,21 @@ async def do_pay(update, ctx, uid, plan_id, panel_id):
     pn = q("SELECT * FROM panels WHERE id=? AND active=1", (panel_id,), True)
     u = get_user(uid)
     if not p or not pn: return await show(update, "این پلن/لوکیشن در دسترس نیست.", back_home())
-    if u["balance"] < p["price"]:
-        return await show(update, render("no_balance", PRICE=money(p["price"]), BALANCE=money(u["balance"])),
+    price, _, dcode = dc_price(uid, p["price"])  # ➕ قیمت بعد از کد تخفیف
+    if u["balance"] < price:
+        return await show(update, render("no_balance", PRICE=money(price), BALANCE=money(u["balance"])),
                           [row(btn("افزایش موجودی", "topup", GREEN, "wallet")), row(btn("بازگشت", "buy", RED, "back"))])
-    ex("UPDATE users SET balance=balance-? WHERE id=?", (p["price"], uid))
+    ex("UPDATE users SET balance=balance-? WHERE id=?", (price, uid))
     try:
-        sid, manual = await build_service(ctx, uid, pn, p["gb"], p["days"], p["price"], plan_id)
+        sid, manual = await build_service(ctx, uid, pn, p["gb"], p["days"], price, plan_id)
     except Exception as e:
-        ex("UPDATE users SET balance=balance+? WHERE id=?", (p["price"], uid))
+        ex("UPDATE users SET balance=balance+? WHERE id=?", (price, uid))
         log.exception("create failed")
         for a in ADMIN_IDS:
             await ctx.bot.send_message(a, f"⚠️ خطای ساخت سرویس روی پنل {pn['name']}:\n{html.escape(str(e))[:500]}")
         return await show(update, "❌ ساخت سرویس با خطا مواجه شد و مبلغ به کیف پول برگشت. به پشتیبانی پیام دهید.",
                           back_home())
+    dc_use(uid, dcode); trx_log(uid, "buy", sid, plan_id, panel_id, p["gb"], p["days"], price, p["price"] - price, dcode)  # ➕
     if manual:
         return await show(update, "✅ سفارش ثبت شد. کانفیگ به‌زودی توسط پشتیبانی ارسال می‌شود.", back_home())
     if update.callback_query:
@@ -937,16 +977,16 @@ async def ask_receipt(update, ctx, amount, gift):
                [row(btn("انصراف", "account", RED, "no"))])
 
 async def page_subs(update, uid):
-    rows = q("SELECT * FROM services WHERE user_id=? ORDER BY id DESC LIMIT 30", (uid,))
+    rows = q("SELECT * FROM services WHERE user_id=? AND status!='deleted' ORDER BY id DESC LIMIT 30", (uid,))  # ➕
     if not rows: return await show(update, render("subs_empty"), [row(btn("خرید اشتراک", "buy", GREEN, "buy"))] + back_home())
     kb = []
     for s in rows:
         st = "🟢" if s["status"] == "active" and s["expire"] > time.time() else ("⏳" if s["status"] == "pending" else "🔴")
-        kb.append(row(btn(f"{st} {s['username']} | {s['gb']}GB{' (تست)' if s['is_test'] else ''}", f"sv:{s['id']}")))
+        kb.append(row(btn(f"{st} {s['title'] or s['username']} | {s['gb']}GB{' (تست)' if s['is_test'] else ''}", f"sv:{s['id']}")))
     await show(update, f"{E('subs')} <b>اشتراک‌های شما</b>", kb + back_home())
 
 async def page_service(update, uid, sid):
-    s = q("SELECT * FROM services WHERE id=? AND user_id=?", (sid, uid), True)
+    s = q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (sid, uid), True)  # ➕
     if not s: return await show(update, "سرویس پیدا نشد.", back_home())
     pn = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True)
     extra = ""
@@ -958,11 +998,13 @@ async def page_service(update, uid, sid):
         except Exception:
             extra = "\n(دریافت وضعیت از پنل ممکن نشد)"
     link = s["sub"] or s["link"] or "هنوز ارسال نشده"
-    text = (f"{E('plan')} <b>{s['username']}</b>\n<blockquote>📍 لوکیشن: {html.escape(pn['name'] if pn else '-')}\n"
+    text = (f"{E('plan')} <b>{svc_name(s)}</b>\n<blockquote>📍 لوکیشن: {html.escape(pn['name'] if pn else '-')}\n"
             f"{E('volume')} حجم: {s['gb']} گیگ\n{E('time')} انقضا: {jdate(s['expire'])}{extra}</blockquote>\n\n"
             f"{E('link')} لینک:\n<code>{html.escape(link)}</code>")
     kb = [row(btn("دریافت QR", f"qr:{sid}", BLUE, "qr"), btn("بروزرسانی وضعیت", f"sv:{sid}", None, "search")),
           row(btn("QR کانفیگ", f"qrc:{sid}", BLUE, "qr")) if s["link"] and s["sub"] and s["link"] != s["sub"] else [],
+          row(btn("تمدید پلن", f"rn:{sid}", GREEN, "renew")) if s["status"] != "pending" else [],  # ➕
+          row(btn("تغییر نام سرویس", f"sren:{sid}", BLUE, "rename"), btn("حذف سرویس", f"sdel:{sid}", RED, "delsrv")),  # ➕
           row(btn("بازگشت", "subs", RED, "back"))]
     kb = [r for r in kb if r]  # ➕
     await show(update, text, kb)
@@ -1078,6 +1120,313 @@ def settings_kb(keys, toggles=()):
         kb.append(row(btn(f"{title}: {'روشن' if on else 'خاموش'}", f"tg:{k}", GREEN if on else RED)))
     return kb + admin_back()
 
+# ───────────────────────── ➕ کد تخفیف / تمدید / حذف / تغییر نام / تراکنش‌ها ─────────────────────────
+DC_PENDING = {}      # کد تخفیف اعمال‌شده هر کاربر (تا پرداخت بعدی)
+RENEW_BUSY = set()   # جلوگیری از دوبار کلیک روی تمدید
+
+def init_db_extra():
+    CON.executescript("""
+    CREATE TABLE IF NOT EXISTS discounts(code TEXT PRIMARY KEY, percent INTEGER, max_uses INTEGER DEFAULT 0,
+        used INTEGER DEFAULT 0, active INTEGER DEFAULT 1, created INTEGER);
+    CREATE TABLE IF NOT EXISTS discount_uses(id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT, user_id INTEGER, created INTEGER);
+    CREATE TABLE IF NOT EXISTS txlog(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, kind TEXT, service_id INTEGER,
+        plan_id INTEGER, panel_id INTEGER, gb REAL, days REAL, amount INTEGER, discount INTEGER DEFAULT 0, code TEXT,
+        created INTEGER);
+    """)
+    cols = [r["name"] for r in q("PRAGMA table_info(services)")]
+    if "title" not in cols: ex("ALTER TABLE services ADD COLUMN title TEXT")
+
+def svc_name(s):
+    t = s["title"] if "title" in s.keys() else None
+    return f"{html.escape(t)} | {html.escape(s['username'])}" if t else html.escape(s["username"])
+
+def dc_check(uid, code):
+    """خروجی: (ردیف کد, دلیل خطا)"""
+    r = q("SELECT * FROM discounts WHERE code=?", (code or "",), True)
+    if not r or not r["active"]: return None, "کد تخفیف نامعتبر است."
+    if r["max_uses"] and r["used"] >= r["max_uses"]: return None, "ظرفیت استفاده از این کد تمام شده."
+    if q("SELECT 1 FROM discount_uses WHERE code=? AND user_id=?", (code, uid), True):
+        return None, "شما قبلاً از این کد استفاده کرده‌اید."
+    return r, ""
+
+def dc_price(uid, price):
+    """قیمت نهایی بعد از کد تخفیف اعمال‌شده → (قیمت, متن نمایش, کد)"""
+    code = DC_PENDING.get(uid)
+    if not code: return int(price), "", None
+    r, _ = dc_check(uid, code)
+    if not r: DC_PENDING.pop(uid, None); return int(price), "", None
+    off = int(price) * int(r["percent"]) // 100
+    final = max(int(price) - off, 0)
+    line = "\n\n" + render("discount_ok", CODE=html.escape(code), PERCENT=r["percent"], ORIG=money(price),
+                           DISCOUNT=money(off), PRICE=money(final))
+    return final, line, code
+
+def dc_use(uid, code):
+    if not code: return
+    ex("UPDATE discounts SET used=used+1 WHERE code=?", (code,))
+    ex("INSERT INTO discount_uses(code,user_id,created) VALUES(?,?,?)", (code, uid, int(time.time())))
+    DC_PENDING.pop(uid, None)
+
+def dc_save(code, percent):
+    percent = max(1, min(100, int(percent)))
+    if q("SELECT 1 FROM discounts WHERE code=?", (code,), True):
+        ex("UPDATE discounts SET percent=? WHERE code=?", (percent, code))
+    else:
+        ex("INSERT INTO discounts(code,percent,created) VALUES(?,?,?)", (code, percent, int(time.time())))
+
+def dc_percent_kb(code):
+    pcs = [5, 10, 15, 20, 25, 30, 40, 50, 70, 100]
+    b = [btn(f"{p}%", f"dcp:{code}:{p}", BLUE) for p in pcs]
+    return [row(*b[i:i + 5]) for i in range(0, len(b), 5)] + admin_back("a:dc")
+
+def trx_log(uid, kind, sid, plan_id, panel_id, gb, days, amount, discount=0, code=None):
+    try:
+        ex("INSERT INTO txlog(user_id,kind,service_id,plan_id,panel_id,gb,days,amount,discount,code,created)"
+           " VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+           (uid, kind, sid, plan_id, panel_id, gb, days, int(amount), int(discount or 0), code, int(time.time())))
+    except Exception as e:
+        log.warning("txlog %s", e)
+
+async def admin_discounts(update):
+    kb = [row(btn(f"{'🟢' if r['active'] else '🔴'} {r['code']} | {r['percent']}% | {r['used']}/{r['max_uses'] or '∞'}",
+                  f"dcv:{r['code']}")) for r in q("SELECT * FROM discounts ORDER BY created DESC LIMIT 40")]
+    kb += [row(btn("ساخت کد تخفیف", "dca", GREEN, "addbal"))] + admin_back()
+    await show(update, render("dc_admin"), kb)
+
+async def admin_discount_view(update, code):
+    r = q("SELECT * FROM discounts WHERE code=?", (code,), True)
+    if not r: return await admin_discounts(update)
+    t = (f"{E('discount')} <b>کد تخفیف</b> <code>{r['code']}</code>\n<blockquote>درصد تخفیف: <b>{r['percent']}%</b>\n"
+         f"تعداد استفاده: <b>{r['used']}</b> از <b>{r['max_uses'] or 'نامحدود'}</b>\n"
+         f"وضعیت: <b>{'فعال' if r['active'] else 'غیرفعال'}</b>\nساخته‌شده: {jdate(r['created'])}</blockquote>\n"
+         "هر کاربر فقط یک‌بار می‌تواند از هر کد استفاده کند.")
+    kb = [row(btn("تغییر درصد", f"dce:{code}", BLUE, "price"), btn("سقف استفاده", f"dcl:{code}", BLUE, "stats")),
+          row(btn("غیرفعال کردن کد" if r["active"] else "فعال کردن کد", f"dcg:{code}", RED if r["active"] else GREEN),
+              btn("حذف کد", f"dcd:{code}", RED, "no"))] + admin_back("a:dc")
+    await show(update, t, kb)
+
+TRX_PERIODS = {"today": "امروز", "yday": "دیروز", "7": "۷ روز اخیر", "30": "۳۰ روز اخیر", "all": "کل"}
+
+def trx_range(per):
+    day0 = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+    now = time.time() + 1
+    return {"today": (day0, now), "yday": (day0 - 86400, day0), "7": (now - 7 * 86400, now),
+            "30": (now - 30 * 86400, now)}.get(per, (0, now))
+
+async def admin_trx(update, per):
+    if per not in TRX_PERIODS: per = "today"
+    a, b = trx_range(per)
+    buys = q("SELECT * FROM services WHERE is_test=0 AND created>=? AND created<?", (a, b))
+    rens = q("SELECT * FROM txlog WHERE kind='renew' AND created>=? AND created<?", (a, b))
+    pays = q("SELECT * FROM payments WHERE status='ok' AND created>=? AND created<?", (a, b))
+    tests = q("SELECT COUNT(*) c FROM services WHERE is_test=1 AND created>=? AND created<?", (a, b), True)["c"]
+    newu = q("SELECT COUNT(*) c FROM users WHERE created>=? AND created<?", (a, b), True)["c"]
+    disc = q("SELECT COALESCE(SUM(discount),0) s, COUNT(code) c FROM txlog WHERE created>=? AND created<? AND discount>0",
+             (a, b), True)
+    sb, sr = sum(s["price"] or 0 for s in buys), sum(r["amount"] or 0 for r in rens)
+    pnames = {p["id"]: p["name"] for p in q("SELECT id,name FROM panels")}
+    orig = {r["service_id"]: r for r in q("SELECT * FROM txlog WHERE kind='buy' AND created>=?", (a - 86400,))}  # مشخصات زمان خرید
+    by_plan, by_panel = {}, {}
+    for gb, days, pid, amt in ([(orig[s["id"]]["gb"] if s["id"] in orig else s["gb"],
+                                 orig[s["id"]]["days"] if s["id"] in orig else s["days"],
+                                 s["panel_id"], s["price"] or 0) for s in buys] +
+                               [(r["gb"], r["days"], r["panel_id"], r["amount"] or 0) for r in rens]):
+        k = f"{gb:g}گیگ | {days:g}روز"; c = by_plan.setdefault(k, [0, 0]); c[0] += 1; c[1] += amt
+        k = pnames.get(pid, f"پنل حذف‌شده #{pid}"); c = by_panel.setdefault(k, [0, 0]); c[0] += 1; c[1] += amt
+    fmt = lambda d: "\n".join(f"• {html.escape(k)}: <b>{v[0]}</b> عدد = <b>{money(v[1])}</b>"
+                              for k, v in sorted(d.items(), key=lambda x: -x[1][1])[:15]) or "—"
+    t = (render("trx_head", PERIOD=TRX_PERIODS[per]) +
+         f"\n<blockquote>🛒 فروش سرویس: <b>{len(buys)}</b> عدد = <b>{money(sb)}</b> تومان\n"
+         f"🔄 تمدید: <b>{len(rens)}</b> عدد = <b>{money(sr)}</b> تومان\n"
+         f"💰 جمع درآمد: <b>{money(sb + sr)}</b> تومان\n"
+         f"💳 شارژ کیف پول تأییدشده: <b>{len(pays)}</b> عدد = <b>{money(sum(p['amount'] for p in pays))}</b> تومان"
+         f" (+ هدیه {money(sum(p['bonus'] or 0 for p in pays))})\n"
+         f"🎟 تخفیف داده‌شده: <b>{disc['c']}</b> بار = <b>{money(disc['s'])}</b> تومان\n"
+         f"🆓 اکانت تست: <b>{tests}</b> | 👥 کاربر جدید: <b>{newu}</b></blockquote>\n"
+         f"📦 <b>به تفکیک پلن (حجم/مدت)</b>\n<blockquote>{fmt(by_plan)}</blockquote>\n"
+         f"🔌 <b>به تفکیک پنل/لوکیشن</b>\n<blockquote>{fmt(by_panel)}</blockquote>")
+    last = sorted([("🛒", s["created"], s["user_id"], s["price"] or 0, s["panel_id"]) for s in buys] +
+                  [("🔄", r["created"], r["user_id"], r["amount"] or 0, r["panel_id"]) for r in rens],
+                  key=lambda x: -x[1])[:10]
+    if last and len(t) < 3000:
+        t += "\n🧾 <b>آخرین تراکنش‌ها</b>\n<blockquote>" + "\n".join(
+            f"{k} {jdate(c)} | <code>{u_}</code> | {money(am)} | {html.escape(pnames.get(pid, '-'))}"
+            for k, c, u_, am, pid in last) + "</blockquote>"
+    kb = [row(btn("امروز", "trx:today", BLUE), btn("دیروز", "trx:yday", BLUE)),
+          row(btn("۷ روز اخیر", "trx:7", BLUE), btn("۳۰ روز اخیر", "trx:30", BLUE), btn("کل تراکنش‌ها", "trx:all", BLUE))]
+    await show(update, t, kb + admin_back())
+
+# ---------- پنل: تمدید و حذف ----------
+async def _xui_find(c, t, p, username):
+    """پیدا کردن اینباند و کلاینت روی X-UI با ایمیل (یوزرنیم سرویس)"""
+    inb = None
+    try:
+        j = (await c.get(f"{XUI_PREFIX[t]}/getClientTraffics/{username}")).json().get("obj") or {}
+        inb = j.get("inboundId") or j.get("inbound_id")
+    except Exception as e:
+        log.warning("xui find %s", e)
+    if not inb:
+        parts = (p["extra"] or "").split("|")
+        inb = int(parts[0]) if parts and parts[0].strip().isdigit() else 1
+    inbound = await _xui_inbound(c, t, inb)
+    client = None
+    if inbound:
+        try: cl = json.loads(inbound.get("settings") or "{}").get("clients") or []
+        except Exception: cl = []
+        client = next((x for x in cl if x.get("email") == username), None)
+    return inb, inbound, client
+
+def _xui_cid(inbound, client):
+    proto = (inbound or {}).get("protocol")
+    if proto == "trojan": return client.get("password") or client.get("id")
+    if proto == "shadowsocks": return client.get("email")
+    return client.get("id")
+
+async def panel_renew(p, username, gb, exp):
+    """تمدید روی پنل: انقضای جدید + حجم جدید + ریست مصرف"""
+    t = p["ptype"]; limit = int(gb * 1024 ** 3); exp = int(exp)
+    async with _http(p) as c:
+        if t in ("marzban", "pasarguard"):
+            h = await _token(c, p)
+            try: await c.post(f"/api/user/{username}/reset", headers=h)
+            except Exception as e: log.warning("reset %s", e)
+            body = {"expire": exp, "data_limit": limit, "status": "active"}
+            r = await c.put(f"/api/user/{username}", json=body, headers=h)
+            if t == "pasarguard" and r.status_code == 422:
+                body["expire"] = dt.datetime.fromtimestamp(exp, dt.timezone.utc).isoformat()
+                r = await c.put(f"/api/user/{username}", json=body, headers=h)
+            if r.status_code >= 400: raise Exception(f"HTTP {r.status_code}: {r.text[:300]}")
+        elif t == "marzneshin":
+            h = await _token(c, p)
+            try: await c.post(f"/api/users/{username}/reset", headers=h)
+            except Exception as e: log.warning("reset %s", e)
+            body = {"username": username, "expire_strategy": "fixed_date", "data_limit": limit,
+                    "expire_date": dt.datetime.fromtimestamp(exp, dt.timezone.utc).isoformat()}
+            r = await c.put(f"/api/users/{username}", json=body, headers=h)
+            if r.status_code >= 400: raise Exception(f"HTTP {r.status_code}: {r.text[:300]}")
+            try: await c.post(f"/api/users/{username}/enable", headers=h)
+            except Exception: pass
+        elif t in XUI_PREFIX:
+            await _xlogin(c, p)
+            inb, inbound, client = await _xui_find(c, t, p, username)
+            if not client: raise Exception("کلاینت روی پنل پیدا نشد")
+            client.update({"totalGB": limit, "expiryTime": exp * 1000, "enable": True})
+            r = await c.post(f"{XUI_PREFIX[t]}/updateClient/{_xui_cid(inbound, client)}",
+                             data={"id": inb, "settings": json.dumps({"clients": [client]})})
+            j = r.json()
+            if not j.get("success"): raise Exception(j.get("msg") or "updateClient failed")
+            try: await c.post(f"{XUI_PREFIX[t]}/{inb}/resetClientTraffic/{username}")
+            except Exception as e: log.warning("xui reset %s", e)
+        else:
+            raise Exception("نوع پنل پشتیبانی نمی‌شود")
+
+async def panel_delete(p, username):
+    t = p["ptype"]
+    async with _http(p) as c:
+        if t in ("marzban", "pasarguard", "marzneshin"):
+            h = await _token(c, p)
+            r = await c.delete(f"/api/{'users' if t == 'marzneshin' else 'user'}/{username}", headers=h)
+            if r.status_code >= 400 and r.status_code != 404: raise Exception(f"HTTP {r.status_code}: {r.text[:300]}")
+        elif t in XUI_PREFIX:
+            await _xlogin(c, p)
+            inb, inbound, client = await _xui_find(c, t, p, username)
+            if not client: return  # روی پنل وجود ندارد
+            j = (await c.post(f"{XUI_PREFIX[t]}/{inb}/delClient/{_xui_cid(inbound, client)}")).json()
+            if not j.get("success"):
+                j2 = (await c.post(f"{XUI_PREFIX[t]}/{inb}/delClientByEmail/{username}")).json()
+                if not j2.get("success"): raise Exception(j.get("msg") or "delClient failed")
+        else:
+            raise Exception("نوع پنل پشتیبانی نمی‌شود")
+
+# ---------- صفحات تمدید ----------
+def _my_service(uid, sid):
+    return q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (sid, uid), True)
+
+def renew_exp(s, days):
+    return int(max(time.time(), s["expire"] or 0) + float(days) * 86400)
+
+async def page_renew(update, uid, sid):
+    s = _my_service(uid, sid)
+    if not s: return await show(update, "سرویس پیدا نشد.", back_home())
+    plans = q("SELECT * FROM plans WHERE active=1 ORDER BY months, gb")
+    if not plans: return await show(update, "فعلاً پلنی برای تمدید وجود ندارد.", [row(btn("بازگشت", f"sv:{sid}", RED, "back"))])
+    plans = sorted(plans, key=lambda p: p["id"] != s["plan_id"])  # پلن فعلی بالای لیست
+    kb = [row(btn(f"{'⭐️ ' if p['id'] == s['plan_id'] else ''}{p['gb']}گیگ | {p['days']}روز | {money(p['price'])} تومان",
+                  f"rnp:{sid}:{p['id']}")) for p in plans[:40]]
+    kb.append(row(btn("بازگشت", f"sv:{sid}", RED, "back")))
+    await show(update, render("renew_plans", NAME=svc_name(s), BALANCE=money(get_user(uid)["balance"])), kb)
+
+async def page_renew_invoice(update, uid, sid, plan_id):
+    s = _my_service(uid, sid); p = q("SELECT * FROM plans WHERE id=? AND active=1", (plan_id,), True)
+    if not s or not p: return await show(update, "این سرویس/پلن در دسترس نیست.", back_home())
+    u = get_user(uid)
+    price, dcline, _ = dc_price(uid, p["price"])
+    text = render("renew_invoice", NAME=svc_name(s), GB=p["gb"], DAYS=p["days"], EXPIRE=jdate(renew_exp(s, p["days"])),
+                  PRICE=money(price), BALANCE=money(u["balance"])) + dcline
+    kb = [row(btn("پرداخت و تمدید", f"rnpay:{sid}:{plan_id}", GREEN, "ok")),
+          row(btn("افزایش موجودی", "topup", None, "wallet")),
+          row(btn("استفاده از کد تخفیف", f"dc:r:{sid}:{plan_id}", BLUE, "discount")),
+          row(btn("بازگشت", f"rn:{sid}", RED, "back"))]
+    await show(update, text, kb)
+
+async def do_renew(update, ctx, uid, sid, plan_id):
+    s = _my_service(uid, sid); p = q("SELECT * FROM plans WHERE id=? AND active=1", (plan_id,), True)
+    pn = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True) if s else None
+    if not s or not p: return await show(update, "این سرویس/پلن در دسترس نیست.", back_home())
+    if not pn: return await show(update, "پنل این سرویس حذف شده؛ تمدید ممکن نیست. به پشتیبانی پیام دهید.", back_home())
+    if s["status"] == "pending": return await show(update, "این سرویس هنوز تحویل نشده.", back_home())
+    if sid in RENEW_BUSY: return
+    price, _, dcode = dc_price(uid, p["price"])
+    u = get_user(uid)
+    if u["balance"] < price:
+        return await show(update, render("no_balance", PRICE=money(price), BALANCE=money(u["balance"])),
+                          [row(btn("افزایش موجودی", "topup", GREEN, "wallet")), row(btn("بازگشت", f"rnp:{sid}:{plan_id}", RED, "back"))])
+    RENEW_BUSY.add(sid)
+    new_exp = renew_exp(s, p["days"])
+    ex("UPDATE users SET balance=balance-? WHERE id=?", (price, uid))
+    try:
+        if pn["ptype"] == "manual":
+            for a in ADMIN_IDS:
+                try: await ctx.bot.send_message(a, f"🔄 تمدید دستی سرویس <code>{html.escape(s['username'])}</code>\nکاربر: <code>{uid}</code>\n"
+                                                   f"{p['gb']} گیگ / {p['days']} روز | انقضای جدید: {jdate(new_exp)}", parse_mode=ParseMode.HTML)
+                except Exception: pass
+        else:
+            await panel_renew(pn, s["username"], p["gb"], new_exp)
+    except Exception as e:
+        ex("UPDATE users SET balance=balance+? WHERE id=?", (price, uid))
+        log.exception("renew failed")
+        for a in ADMIN_IDS:
+            try: await ctx.bot.send_message(a, f"⚠️ خطای تمدید سرویس {s['username']} روی پنل {pn['name']}:\n{html.escape(str(e))[:500]}")
+            except Exception: pass
+        return await show(update, "❌ تمدید با خطا مواجه شد و مبلغ به کیف پول برگشت. به پشتیبانی پیام دهید.", back_home())
+    finally:
+        RENEW_BUSY.discard(sid)
+    ex("UPDATE services SET gb=?, days=?, expire=?, plan_id=?, status='active', mid_sent=0, end_sent=0, is_test=0 WHERE id=?",
+       (p["gb"], p["days"], new_exp, plan_id, sid))
+    dc_use(uid, dcode); trx_log(uid, "renew", sid, plan_id, pn["id"], p["gb"], p["days"], price, p["price"] - price, dcode)
+    await show(update, render("renew_done", NAME=svc_name(s), GB=p["gb"], EXPIRE=jdate(new_exp), PRICE=money(price)),
+               [row(btn("بازگشت به سرویس", f"sv:{sid}", BLUE, "back"))] + back_home())
+
+async def do_delete_service(update, ctx, uid, sid, force=False):
+    s = _my_service(uid, sid)
+    if not s: return await show(update, "سرویس پیدا نشد.", back_home())
+    pn = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True)
+    if not force and pn and pn["ptype"] != "manual" and s["status"] != "pending":
+        try:
+            await panel_delete(pn, s["username"])
+        except Exception as e:
+            log.warning("delete %s: %s", s["username"], e)
+            return await show(update, f"⚠️ حذف از پنل ممکن نشد:\n<code>{html.escape(str(e))[:300]}</code>\n\nدوباره تلاش کن یا فقط از ربات حذف شود؟",
+                              [row(btn("تلاش دوباره", f"sdy:{sid}", BLUE, "renew"), btn("حذف فقط از ربات", f"sdf:{sid}", RED, "delsrv")),
+                               row(btn("انصراف", f"sv:{sid}", GREEN, "back"))])
+    elif pn and pn["ptype"] == "manual":
+        for a in ADMIN_IDS:
+            try: await ctx.bot.send_message(a, f"🗑 کاربر <code>{uid}</code> سرویس دستی <code>{html.escape(s['username'])}</code> را حذف کرد.",
+                                            parse_mode=ParseMode.HTML)
+            except Exception: pass
+    ex("UPDATE services SET status='deleted' WHERE id=?", (sid,))
+    await show(update, render("delete_done", NAME=svc_name(s)), [row(btn("اشتراک‌های من", "subs", BLUE, "subs"))] + back_home())
+
 # ───────────────────────── هندلرها ─────────────────────────
 def touch(tg_user, ref=None):
     u = get_user(tg_user.id); now = int(time.time())
@@ -1126,6 +1475,7 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if len(panels) == 1: return await page_invoice(update, uid, pid, panels[0]["id"])
         kb = [row(btn(f"📍 {p['name']}", f"inv:{pid}:{p['id']}", BLUE)) for p in panels]
         return await show(update, "📍 <b>لوکیشن مورد نظر را انتخاب کنید</b>", kb + [row(btn("بازگشت", "buy", RED, "back"))])
+    if d.startswith(("inv:", "rnp:")) and (ctx.user_data.get("state") or [None])[0] == "dcode": clear_state(ctx)  # ➕
     if d.startswith("inv:"):
         _, a, b = d.split(":"); return await page_invoice(update, uid, int(a), int(b))
     if d.startswith("pay:"):
@@ -1150,6 +1500,28 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         img = make_qr(s and s["link"])
         if img: await ctx.bot.send_photo(uid, img, caption=f"🔳 <b>QR کانفیگ</b>\n<code>{html.escape(s['link'][:900])}</code>", parse_mode=ParseMode.HTML)
         return
+    # ➕ تمدید / حذف / تغییر نام سرویس + کد تخفیف
+    if d.startswith("rn:"): clear_state(ctx); return await page_renew(update, uid, int(d[3:]))
+    if d.startswith("rnp:"):
+        _, a, b = d.split(":"); clear_state(ctx); return await page_renew_invoice(update, uid, int(a), int(b))
+    if d.startswith("rnpay:"):
+        _, a, b = d.split(":"); return await do_renew(update, ctx, uid, int(a), int(b))
+    if d.startswith("sren:"):
+        s = q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (int(d[5:]), uid), True)
+        if not s: return await show(update, "سرویس پیدا نشد.", back_home())
+        set_state(ctx, "srename", s["id"])
+        return await show(update, render("rename_ask", NAME=svc_name(s)), [row(btn("بازگشت", f"sv:{s['id']}", RED, "back"))])
+    if d.startswith("sdel:"):
+        s = q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (int(d[5:]), uid), True)
+        if not s: return await show(update, "سرویس پیدا نشد.", back_home())
+        return await show(update, render("delete_confirm", NAME=svc_name(s)),
+                          [row(btn("بله، حذف شود", f"sdy:{s['id']}", RED, "delsrv"), btn("انصراف", f"sv:{s['id']}", GREEN, "back"))])
+    if d.startswith("sdy:") or d.startswith("sdf:"):
+        return await do_delete_service(update, ctx, uid, int(d[4:]), force=d.startswith("sdf:"))
+    if d.startswith("dc:"):
+        parts = d.split(":"); back = f"inv:{parts[2]}:{parts[3]}" if parts[1] == "b" else f"rnp:{parts[2]}:{parts[3]}"
+        set_state(ctx, "dcode", back)
+        return await show(update, render("discount_ask"), [row(btn("بازگشت", back, RED, "back"))])
     # ➕ سایر امکانات جدید
     if d == "ip": return await page_ip(update, uid)
     if d == "usage": return await page_usage(update, uid)
@@ -1305,6 +1677,30 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         set_S("emoji:" + k, e[0]); set_S("emoji_fb:" + k, e[1]); set_state(ctx, "emojiquick")
         msg = f'✅ ثبت شد: <b>{k}</b> ← <tg-emoji emoji-id="{e[0]}">{e[1]}</tg-emoji>\nایموجی بعدی را بفرست یا برگرد.'
         return await show(update, msg, admin_back("a:emoji"))
+    # ➕ تراکنش‌ها
+    if d == "a:trx" or d.startswith("trx:"):
+        return await admin_trx(update, d[4:] if d.startswith("trx:") else "today")
+    # ➕ کدهای تخفیف
+    if d == "a:dc": clear_state(ctx); return await admin_discounts(update)
+    if d == "dca":
+        set_state(ctx, "dcadd")
+        return await show(update, "🎟 نام کد تخفیف را بفرست (حروف انگلیسی، عدد، - و _ | ۲ تا ۲۰ کاراکتر)\n"
+                                  "یا <code>-</code> بفرست تا کد تصادفی ساخته شود:", admin_back("a:dc"))
+    if d.startswith("dcp:"):
+        _, code, pc = d.split(":"); clear_state(ctx)
+        dc_save(code, int(pc)); return await admin_discount_view(update, code)
+    if d.startswith("dcv:"): clear_state(ctx); return await admin_discount_view(update, d[4:])
+    if d.startswith("dce:"):
+        set_state(ctx, "dcpct", d[4:]); return await show(update, f"درصد تخفیف کد <code>{d[4:]}</code> را انتخاب کن یا عددش را بفرست (۱ تا ۱۰۰):",
+                                                         dc_percent_kb(d[4:]))
+    if d.startswith("dcg:"):
+        ex("UPDATE discounts SET active=1-active WHERE code=?", (d[4:],)); return await admin_discount_view(update, d[4:])
+    if d.startswith("dcl:"):
+        set_state(ctx, "dclimit", d[4:])
+        return await show(update, f"سقف تعداد استفاده از کد <code>{d[4:]}</code> را بفرست (<code>0</code> = نامحدود):",
+                          admin_back(f"dcv:{d[4:]}"))
+    if d.startswith("dcd:"):
+        ex("DELETE FROM discounts WHERE code=?", (d[4:],)); return await admin_discounts(update)
     if d == "a:test":
         panels = "\n".join(f"{p['id']}: {html.escape(p['name'])}" for p in q("SELECT * FROM panels")) or "-"
         return await show(update, f"🆓 <b>تنظیمات اکانت تست</b>\nپنل‌ها:\n{panels}",
@@ -1388,8 +1784,46 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         kb = [row(btn("تأیید انتقال", f"trc:{s['id']}:{t}", GREEN, "ok"), btn("انصراف", "transfer", RED, "no"))]
         return await m.reply_text(f"سرویس <code>{html.escape(s['username'])}</code> به کاربر <code>{t}</code> منتقل شود؟",
                                   parse_mode=ParseMode.HTML, reply_markup=IKM(kb))
+    if name == "dcode":  # ➕ وارد کردن کد تخفیف
+        code = txt.upper().replace(" ", "")
+        row_, reason = dc_check(uid, code)
+        back = st[1]
+        if not row_:
+            return await m.reply_text(render("discount_bad", REASON=reason), parse_mode=ParseMode.HTML,
+                                      reply_markup=IKM([row(btn("بازگشت", back, RED, "back"))]))
+        DC_PENDING[uid] = code; clear_state(ctx)
+        _, a, b = back.split(":")
+        if back.startswith("inv:"): return await page_invoice(update, uid, int(a), int(b))
+        return await page_renew_invoice(update, uid, int(a), int(b))
+    if name == "srename":  # ➕ تغییر نام سرویس
+        new = " ".join(txt.split())
+        if not new or len(new) > 32: return await m.reply_text("نام باید بین ۱ تا ۳۲ کاراکتر باشد. دوباره بفرست:")
+        s = q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (st[1], uid), True)
+        clear_state(ctx)
+        if not s: return await m.reply_text("سرویس پیدا نشد.")
+        ex("UPDATE services SET title=? WHERE id=?", (new, s["id"]))
+        return await show(update, render("rename_done", NAME=html.escape(new)),
+                          [row(btn("بازگشت به سرویس", f"sv:{s['id']}", BLUE, "back"))] + back_home())
     if not is_admin(uid): return
     # ---------- ادمین ----------
+    if name == "dcadd":  # ➕ ساخت کد تخفیف
+        code = secrets.token_hex(3).upper() if txt == "-" else txt.upper().replace(" ", "")
+        if not re.fullmatch(r"[A-Z0-9_-]{2,20}", code):
+            return await m.reply_text("فقط حروف انگلیسی، عدد، - و _ (۲ تا ۲۰ کاراکتر). دوباره بفرست:")
+        if q("SELECT 1 FROM discounts WHERE code=?", (code,), True):
+            return await m.reply_text("این کد قبلاً ساخته شده. یک نام دیگر بفرست:")
+        set_state(ctx, "dcpct", code)
+        return await show(update, f"🎟 کد <code>{code}</code>\nچند درصد تخفیف بدهد؟ انتخاب کن یا عددش را بفرست (۱ تا ۱۰۰):",
+                          dc_percent_kb(code))
+    if name == "dcpct":
+        t = txt.replace("%", "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+        if not t.isdigit() or not 1 <= int(t) <= 100: return await m.reply_text("فقط عدد بین ۱ تا ۱۰۰ بفرست.")
+        clear_state(ctx); dc_save(st[1], int(t)); return await admin_discount_view(update, st[1])
+    if name == "dclimit":
+        t = txt.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+        if not t.isdigit(): return await m.reply_text("فقط عدد بفرست (0 = نامحدود).")
+        ex("UPDATE discounts SET max_uses=? WHERE code=?", (int(t), st[1])); clear_state(ctx)
+        return await admin_discount_view(update, st[1])
     if name == "emojiinfo" or name == "emoji":
         ids = premium_ids(m)  # ➕ متن و کپشن
         if name == "emoji":
@@ -1565,6 +1999,7 @@ async def job_followup(ctx: ContextTypes.DEFAULT_TYPE):
 
 def main():
     init_db()
+    init_db_extra()  # ➕ جدول‌های کد تخفیف / تراکنش / نام سرویس
     load_admins()  # ➕
     app = Application.builder().token(BOT_TOKEN).build()
     app.post_init = ip_server_start  # ➕ وب‌سرور اطلاعات IP
