@@ -27,7 +27,7 @@ ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "8489061532").replace(" ", "
 MAIN_ADMIN_ID = 8489061532
 ENV_ADMIN_IDS = set(ADMIN_IDS)  # ادمین‌های داخل تنظیمات هم ادمین اصلی حساب می‌شوند
 ADMIN_IDS.add(MAIN_ADMIN_ID)
-BOT_NAME = os.getenv("BOT_NAME", "VIP VPN")
+BOT_NAME = os.getenv("BOT_NAME", "پروکسیوم")
 DB_PATH = os.getenv("DB_PATH", "bot.db")
 RTL = os.getenv("RTL_BUTTONS", "1") == "1"      # دکمه اول هر ردیف سمت راست باشد
 USER_PREFIX = os.getenv("USER_PREFIX", "px")
@@ -118,8 +118,6 @@ TEXTS = {
         "۲. لینک را در اپ v2rayNG / Streisand / Hiddify وارد کنید.\n۳. در صورت مشکل به پشتیبانی پیام دهید."),
     "rules": ("قوانین", "{E:rules} <b>قوانین</b>\n\n• استفاده هم‌زمان بیش از حد مجاز ممنوع است.\n"
         "• هزینه پس از تحویل سرویس قابل بازگشت نیست."),
-    "support_intro": ("پشتیبانی", "{E:support} <b>پشتیبانی</b>\n\nپیام خود را بنویسید و برای ما بفرستید."),
-    "support_sent": ("پیام دریافت شد", "{E:ok} <b>پیام شما ارسال شد</b>\n\nپاسخ ادمین را در این بخش دریافت خواهید کرد."),
     "test_delivery": ("تحویل اکانت تست",
         "{E:test} <b>اکانت تست رایگان شما آماده است</b>\n<blockquote>{E:volume} حجم: {GB} گیگ\n"
         "{E:time} مدت: {DAYS} روز</blockquote>\n\n{E:link} لینک:\n<code>{LINK}</code>"),
@@ -208,8 +206,6 @@ def init_db():
     CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount INTEGER,
         bonus INTEGER DEFAULT 0, photo TEXT, status TEXT DEFAULT 'pending', created INTEGER);
     CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT);
-    CREATE TABLE IF NOT EXISTS support_tickets(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, 
-        message TEXT, created INTEGER, status TEXT DEFAULT 'open');
     """)
     for k, v in DEFAULT_SETTINGS.items():
         ex("INSERT OR IGNORE INTO settings(k,v) VALUES(?,?)", (k, v))
@@ -328,7 +324,7 @@ def strip_premium(text, markup):
     return text, markup
 
 COLOR_ICON = {"orig": "⚪️", "green": "🟢", "red": "🔴", "blue": "🔵", "none": "⚫️"}
-CLR_PAGE = 999
+CLR_PAGE = 16
 
 def color_list_kb(page=0):
     names = BTN_NAMES; pages = max(1, (len(names) + CLR_PAGE - 1) // CLR_PAGE); page = max(0, min(page, pages - 1))
@@ -753,7 +749,6 @@ def main_kb(uid):
         row(btn("تست قبل از خرید", "test", RED, "test")),
         row(btn("پشتیبانی", url=S("support_url"), ek="support"), btn("کانال", url=S("channel_url"), ek="channel"),
             btn("حساب", "account", None, "account")),
-        row(btn("پشتیبانی", "support", GREEN, "support")),
         row(btn("سایر امکانات", "more", None, "more")),
     ]
     if is_admin(uid):  # دکمه مخفی؛ فقط ادمین می‌بیند
