@@ -23,7 +23,8 @@ except ImportError:
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8724829924:AAFTKv8i5sOSFgsApENBYc260g-Z8R0vW1k")
 ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "8489061532").replace(" ", "").split(",") if x}
 # ➕ ادمین اصلی (فقط او می‌تواند ادمین اضافه/حذف کند)
-MAIN_ADMIN_ID = 7363962357
+MAIN_ADMIN_ID = 8489061532
+ENV_ADMIN_IDS = set(ADMIN_IDS)  # ادمین‌های داخل تنظیمات هم ادمین اصلی حساب می‌شوند
 ADMIN_IDS.add(MAIN_ADMIN_ID)
 BOT_NAME = os.getenv("BOT_NAME", "پروکسیوم")
 DB_PATH = os.getenv("DB_PATH", "bot.db")
@@ -34,8 +35,25 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("bot")
 
 GREEN, RED, BLUE = "success", "danger", "primary"
-# ➕ حالت رنگ همه دکمه‌ها (از پنل مدیریت > رنگ دکمه‌ها)
-BTN_COLOR_MODES = {"orig": ("رنگ اورجینال", None), "green": ("سبز", GREEN), "red": ("قرمز", RED), "blue": ("آبی", BLUE)}
+# ➕ رنگ جداگانه برای هر دکمه (از پنل مدیریت > رنگ دکمه‌ها)
+BTN_COLOR_MODES = {"orig": ("رنگ اورجینال", None), "green": ("سبز", GREEN), "red": ("قرمز", RED),
+                   "blue": ("آبی", BLUE), "none": ("بی‌رنگ", None)}
+BTN_GROUPS = {"pl": "دکمه‌های مدت (ماهه)", "bp": "دکمه‌های ردیف پلن (حجم/روز/قیمت)", "ta": "دکمه‌های مبلغ شارژ",
+              "sv": "لیست اشتراک‌های کاربر", "inv": "دکمه‌های لوکیشن", "pv": "لیست پنل‌ها (ادمین)",
+              "plv": "لیست پلن‌ها (ادمین)", "set": "دکمه‌های تنظیمات (ادمین)", "tg": "دکمه‌های روشن/خاموش (ادمین)",
+              "pn": "نوع پنل (ادمین)", "soon": "پنل‌های به‌زودی", "tx": "لیست متن‌ها (ادمین)",
+              "em": "لیست ایموجی‌ها (ادمین)", "noop": "عنوان‌ها و برچسب‌های صفحه", "url": "دکمه‌های لینک"}
+try:
+    _SRC = open(os.path.abspath(__file__), encoding="utf-8").read()
+except Exception:
+    _SRC = ""
+BTN_NAMES = sorted(set(re.findall(r'btn\("([^"{]+)"', _SRC))) + list(dict.fromkeys(BTN_GROUPS.values()))
+
+def color_key(text, data=None, url=None):
+    if text in BTN_NAMES[:len(BTN_NAMES) - len(BTN_GROUPS)]: return text
+    if url: return BTN_GROUPS["url"]
+    pre = (data or "noop").split(":")[0]
+    return BTN_GROUPS.get(pre, BTN_GROUPS["noop"])
 
 # ───────────────────────── ایموجی‌ها (پریمیوم + جایگزین) ─────────────────────────
 # آیدی ایموجی پریمیوم هر کلید از داخل پنل ادمین > ایموجی‌های پریمیوم ست می‌شود
@@ -119,7 +137,7 @@ DEFAULT_SETTINGS = {
     "gift_min": "500000", "gift_percent": "10", "ref_percent": "5",
     "support_url": "https://t.me/telegram", "channel_url": "https://t.me/telegram",
     "premium_on": "1", "bridge_url": "", "start_sticker": "", "suggest_plan": "",
-    "btn_color": "orig", "extra_admins": "",
+    "extra_admins": "",
 }
 SETTING_TITLES = {
     "card_number": "شماره کارت", "card_owner": "نام صاحب کارت", "test_gb": "حجم تست (گیگ)",
@@ -217,13 +235,18 @@ def btn(text, data=None, style=None, ek=None, url=None):
     """دکمه رنگی + ایموجی پریمیوم. اگر آیدی ایموجی ست نشده باشد، ایموجی معمولی کنار متن می‌آید."""
     kw = {}
     if style: kw["style"] = style
-    _mode = BTN_COLOR_MODES.get(S("btn_color"), (None, None))[1]  # ➕ رنگ سراسری؛ اورجینال = همان رنگ خود دکمه
-    if _mode: kw["style"] = _mode
+    _c = S("color:" + color_key(text, data, url))  # ➕ رنگ اختصاصی همین دکمه
+    if _c == "none": kw.pop("style", None)
+    elif BTN_COLOR_MODES.get(_c, (0, None))[1]: kw["style"] = BTN_COLOR_MODES[_c][1]
     eid = emoji_id(ek) if ek else None
     if eid: kw["icon_custom_emoji_id"] = eid
     label = text if (eid or not ek) else f"{text} {EMOJI.get(ek, '')}".strip()
-    if url: return IKB(label, url=url, **kw)
-    return IKB(label, callback_data=data or "noop", **kw)
+    try:
+        if url: return IKB(label, url=url, **kw)
+        return IKB(label, callback_data=data or "noop", **kw)
+    except TypeError:  # ➕ نسخه قدیمی‌تر کتابخانه: ارسال مستقیم فیلدها به API
+        if url: return IKB(label, url=url, api_kwargs=kw)
+        return IKB(label, callback_data=data or "noop", api_kwargs=kw)
 
 def row(*b):
     b = [x for x in b if x is not None]
@@ -232,7 +255,7 @@ def row(*b):
 def is_admin(uid): return uid in ADMIN_IDS
 
 # ➕ مدیریت ادمین‌ها
-def is_main_admin(uid): return uid == MAIN_ADMIN_ID
+def is_main_admin(uid): return uid == MAIN_ADMIN_ID or uid in ENV_ADMIN_IDS
 
 def extra_admins():
     return [int(x) for x in S("extra_admins").replace(" ", "").split(",") if x.strip().isdigit()]
@@ -255,12 +278,51 @@ async def admin_admins(update):
 # ➕ ایموجی پریمیوم با کد عددی
 def parse_emoji_ids(txt):
     """کدهای عددی ایموجی را از متن درمی‌آورد؛ مثل 5920499378291744339 یا [5920499378291744339]"""
-    return re.findall(r"\d{15,20}", txt or "")
+    txt = (txt or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+    return re.findall(r"[0-9]{15,20}", txt)
 
-def color_kb():
-    cur = S("btn_color") if S("btn_color") in BTN_COLOR_MODES else "orig"
-    kb = [row(btn(("✅ " if k == cur else "") + v[0], f"clr:{k}", v[1])) for k, v in BTN_COLOR_MODES.items()]
+async def check_emoji(bot, eid):
+    """بررسی کد ایموجی از سرور تلگرام؛ خروجی: (معتبر؟, ایموجی جایگزین)"""
+    try:
+        st = await bot.get_custom_emoji_stickers([eid])
+        if st: return True, (st[0].emoji or "⭐️")
+        return False, None
+    except Exception as e:
+        log.warning("check_emoji %s: %s", eid, e); return True, "⭐️"
+
+def strip_premium(text, markup):
+    """اگر تلگرام ایموجی پریمیوم را قبول نکرد، نسخه ساده (بدون پریمیوم) ساخته می‌شود."""
+    text = re.sub(r'<tg-emoji emoji-id="[^"]*">(.*?)</tg-emoji>', r"\1", text or "", flags=re.S)
+    if markup:
+        try:
+            d = markup.to_dict()
+            for r_ in d.get("inline_keyboard", []):
+                for b_ in r_: b_.pop("icon_custom_emoji_id", None)
+            markup = IKM.de_json(d, None)
+        except Exception:
+            pass
+    return text, markup
+
+COLOR_ICON = {"orig": "⚪️", "green": "🟢", "red": "🔴", "blue": "🔵", "none": "⚫️"}
+CLR_PAGE = 16
+
+def color_list_kb(page=0):
+    names = BTN_NAMES; pages = max(1, (len(names) + CLR_PAGE - 1) // CLR_PAGE); page = max(0, min(page, pages - 1))
+    items = [IKB(f"{COLOR_ICON.get(S('color:' + n) or 'orig', '⚪️')} {n}", callback_data=f"cb:{i}:{page}")
+             for i, n in enumerate(names)][page * CLR_PAGE:(page + 1) * CLR_PAGE]
+    kb = [row(*items[i:i + 2]) for i in range(0, len(items), 2)]
+    nav = [IKB("◀️ قبلی", callback_data=f"cp:{page - 1}") if page > 0 else None,
+           IKB(f"{page + 1}/{pages}", callback_data="noop"),
+           IKB("بعدی ▶️", callback_data=f"cp:{page + 1}") if page + 1 < pages else None]
+    kb.append(row(*nav))
+    kb.append([IKB("♻️ ریست رنگ همه دکمه‌ها", callback_data="cr")])
     return kb + admin_back()
+
+def color_pick_kb(i, page):
+    cur = S("color:" + BTN_NAMES[i]) or "orig"
+    kb = [[IKB(("✅ " if k == cur else "") + COLOR_ICON[k] + " " + v[0], callback_data=f"cs:{i}:{k}:{page}",
+               **({"api_kwargs": {"style": v[1]}} if v[1] else {}))] for k, v in BTN_COLOR_MODES.items()]
+    return kb + [[IKB("🔙 بازگشت", callback_data=f"cp:{page}")]]
 
 def make_qr(data):
     if not qrcode or not data: return None
@@ -276,8 +338,17 @@ async def show(update: Update, text, kb=None):
                                               disable_web_page_preview=True)
         except Exception:
             pass
-    return await update.effective_chat.send_message(text, parse_mode=ParseMode.HTML, reply_markup=markup,
-                                                    disable_web_page_preview=True)
+    try:
+        return await update.effective_chat.send_message(text, parse_mode=ParseMode.HTML, reply_markup=markup,
+                                                        disable_web_page_preview=True)
+    except Exception as e:  # ➕ اگر ایموجی پریمیوم رد شد، بدون پریمیوم بفرست تا ربات از کار نیفتد
+        log.warning("show premium fallback: %s", e)
+        t2, m2 = strip_premium(text, markup)
+        if cq:
+            try: return await cq.edit_message_text(t2, parse_mode=ParseMode.HTML, reply_markup=m2, disable_web_page_preview=True)
+            except Exception: pass
+        return await update.effective_chat.send_message(t2, parse_mode=ParseMode.HTML, reply_markup=m2,
+                                                        disable_web_page_preview=True)
 
 def set_state(ctx, *s): ctx.user_data["state"] = s
 def clear_state(ctx): ctx.user_data.pop("state", None)
@@ -826,18 +897,29 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         set_state(ctx, "emojibulk")
         return await show(update, "هر خط: <code>کلید کد</code>\nمثال:\n<code>buy 5920499378291744339\nok 5922371352672608900</code>\n\n"
                                   "کلیدها: " + " ".join(f"<code>{k}</code>" for k in EMOJI), admin_back("a:emoji"))
-    if d == "a:color":  # ➕ رنگ دکمه‌ها
-        return await show(update, "🎨 <b>رنگ دکمه‌ها</b>\nرنگ همه دکمه‌های ربات را انتخاب کن:", color_kb())
-    if d.startswith("clr:"):
-        if d[4:] in BTN_COLOR_MODES: set_S("btn_color", d[4:])
-        return await show(update, f"🎨 <b>رنگ دکمه‌ها</b>\nرنگ فعلی: <b>{BTN_COLOR_MODES[S('btn_color')][0]}</b>", color_kb())
+    if d == "a:color" or d.startswith("cp:"):  # ➕ رنگ دکمه‌ها (هر دکمه جدا)
+        return await show(update, "🎨 <b>رنگ دکمه‌ها</b>\nروی هر دکمه بزن و رنگش را انتخاب کن.\n"
+                                  "⚪️ اورجینال  🟢 سبز  🔴 قرمز  🔵 آبی  ⚫️ بی‌رنگ",
+                          color_list_kb(int(d[3:]) if d.startswith("cp:") else 0))
+    if d.startswith("cb:"):
+        _, i, pg = d.split(":"); i = int(i)
+        if not 0 <= i < len(BTN_NAMES): return await show(update, "دکمه پیدا نشد.", color_list_kb())
+        return await show(update, f"🎨 رنگ دکمه «<b>{html.escape(BTN_NAMES[i])}</b>» را انتخاب کن:", color_pick_kb(i, int(pg)))
+    if d.startswith("cs:"):
+        _, i, k, pg = d.split(":"); i = int(i)
+        if 0 <= i < len(BTN_NAMES) and k in BTN_COLOR_MODES: set_S("color:" + BTN_NAMES[i], "" if k == "orig" else k)
+        return await show(update, f"✅ رنگ «<b>{html.escape(BTN_NAMES[i])}</b>» شد: <b>{BTN_COLOR_MODES[k][0]}</b>",
+                          color_list_kb(int(pg)))
+    if d == "cr":
+        ex("DELETE FROM settings WHERE k LIKE 'color:%'")
+        return await show(update, "♻️ رنگ همه دکمه‌ها به حالت اورجینال برگشت.", color_list_kb())
     if d == "a:admins" or d.startswith("adm:"):  # ➕ مدیریت ادمین‌ها (فقط ادمین اصلی)
-        if not is_main_admin(uid): return await cq.answer("فقط ادمین اصلی دسترسی دارد", show_alert=True)
+        if not is_main_admin(uid): return await show(update, "⛔️ فقط ادمین اصلی به این بخش دسترسی دارد.", admin_back())
         if d == "adm:add":
             set_state(ctx, "admadd"); return await show(update, "آیدی عددی ادمین جدید را بفرست:", admin_back("a:admins"))
         if d.startswith("adm:del:"):
             rid = int(d[8:]); save_admins([i for i in extra_admins() if i != rid])
-            if rid != MAIN_ADMIN_ID: ADMIN_IDS.discard(rid)
+            if rid != MAIN_ADMIN_ID and rid not in ENV_ADMIN_IDS: ADMIN_IDS.discard(rid)
         return await admin_admins(update)
     if d == "a:test":
         panels = "\n".join(f"{p['id']}: {html.escape(p['name'])}" for p in q("SELECT * FROM panels")) or "-"
@@ -919,9 +1001,17 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if name == "emoji":
             if txt.lower() == "reset": set_S("emoji:" + st[1], "")
             elif not ids and parse_emoji_ids(txt):  # ➕ کد عددی ایموجی
-                eid = parse_emoji_ids(txt)[0]; set_S("emoji:" + st[1], eid); clear_state(ctx)
-                return await m.reply_text(f"✅ ذخیره شد: {st[1]}  →  <tg-emoji emoji-id=\"{eid}\">{EMOJI.get(st[1]) or '⭐️'}</tg-emoji>\n<code>{eid}</code>",
-                                          parse_mode=ParseMode.HTML, reply_markup=IKM(admin_back("a:emoji")))
+                eid = parse_emoji_ids(txt)[0]
+                valid, fb = await check_emoji(ctx.bot, eid)
+                if not valid: return await m.reply_text(f"❌ کد <code>{eid}</code> در تلگرام وجود ندارد. کد درست را بفرست.", parse_mode=ParseMode.HTML)
+                set_S("emoji:" + st[1], eid); clear_state(ctx)
+                try:
+                    return await m.reply_text(f"✅ ذخیره شد: {st[1]}  →  <tg-emoji emoji-id=\"{eid}\">{fb}</tg-emoji>\n<code>{eid}</code>",
+                                              parse_mode=ParseMode.HTML, reply_markup=IKM(admin_back("a:emoji")))
+                except Exception as e:
+                    return await m.reply_text(f"✅ ذخیره شد: {st[1]} ({eid})\n⚠️ تلگرام اجازه نمایش این ایموجی را به ربات نداد: {e}\n"
+                                              "(برای نمایش ایموجی پریمیوم، صاحب ربات باید تلگرام پریمیوم داشته باشد)",
+                                              reply_markup=IKM(admin_back("a:emoji")))
             elif not ids: return await m.reply_text("ایموجی پریمیوم پیدا نکردم. یک ایموجی پریمیوم بفرست.")
             else: set_S("emoji:" + st[1], ids[0])
             clear_state(ctx); return await m.reply_text(f"✅ ذخیره شد: {st[1]}", reply_markup=IKM(admin_back("a:emoji")))
@@ -936,14 +1026,24 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             parts = line.replace("»", " ").replace(":", " ").split()
             if not parts: continue
             ids = parse_emoji_ids(line)
-            if parts[0] in EMOJI and ids: set_S("emoji:" + parts[0], ids[0]); ok.append(f'{parts[0]} <tg-emoji emoji-id="{ids[0]}">{EMOJI[parts[0]]}</tg-emoji>')
+            if parts[0] in EMOJI and ids:
+                valid, fb = await check_emoji(ctx.bot, ids[0])
+                if not valid: bad.append(html.escape(line) + " (کد نامعتبر)"); continue
+                set_S("emoji:" + parts[0], ids[0]); ok.append(f'{parts[0]} <tg-emoji emoji-id="{ids[0]}">{fb}</tg-emoji>')
             else: bad.append(html.escape(line))
         clear_state(ctx)
         msg = ("✅ ذخیره شد:\n" + "\n".join(ok) if ok else "چیزی ذخیره نشد.") + ("\n\n❌ نامعتبر:\n" + "\n".join(bad) if bad else "")
-        return await m.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=IKM(admin_back("a:emoji")))
+        try: return await m.reply_text(msg, parse_mode=ParseMode.HTML, reply_markup=IKM(admin_back("a:emoji")))
+        except Exception:
+            t2, _ = strip_premium(msg, None)
+            return await m.reply_text(t2 + "\n\n⚠️ تلگرام اجازه نمایش ایموجی پریمیوم را به ربات نداد (صاحب ربات باید پریمیوم باشد).",
+                                      parse_mode=ParseMode.HTML, reply_markup=IKM(admin_back("a:emoji")))
     if name == "admadd":  # ➕ افزودن ادمین
         if not is_main_admin(uid): clear_state(ctx); return
-        if not txt.isdigit(): return await m.reply_text("فقط آیدی عددی بفرست.")
+        fo = getattr(m, "forward_origin", None); fu = getattr(fo, "sender_user", None) if fo else None
+        if fu: txt = str(fu.id)  # پیام فوروارد‌شده از خود شخص هم قبول است
+        txt = txt.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+        if not txt.isdigit(): return await m.reply_text("فقط آیدی عددی بفرست (یا یک پیام از خود شخص فوروارد کن).")
         nid = int(txt); save_admins(extra_admins() + [nid]); ADMIN_IDS.add(nid); clear_state(ctx)
         try: await ctx.bot.send_message(nid, "🛠 شما به عنوان ادمین ربات اضافه شدید. /start را بزنید.")
         except Exception: pass
