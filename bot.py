@@ -20,8 +20,8 @@ except ImportError:
     qrcode = None
 
 # ───────────────────────── تنظیمات اصلی ─────────────────────────
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8961453180:AAFLZy5qU-1UiYZFarubjfeJbmo-h6LguLY")
-ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "7363962357").replace(" ", "").split(",") if x}
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8724829924:AAFTKv8i5sOSFgsApENBYc260g-Z8R0vW1k")
+ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "8489061532").replace(" ", "").split(",") if x}
 # ➕ ادمین اصلی (فقط او می‌تواند ادمین اضافه/حذف کند)
 MAIN_ADMIN_ID = 7363962357
 ADMIN_IDS.add(MAIN_ADMIN_ID)
