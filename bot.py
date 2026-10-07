@@ -21,13 +21,13 @@ except ImportError:
     qrcode = None
 
 # ───────────────────────── تنظیمات اصلی ─────────────────────────
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8724829924:AAFTKv8i5sOSFgsApENBYc260g-Z8R0vW1k")
-ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "8489061532").replace(" ", "").split(",") if x}
+BOT_TOKEN = os.getenv("BOT_TOKEN", "PUT_YOUR_TOKEN_HERE")
+ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "123456789").replace(" ", "").split(",") if x}
 # ➕ ادمین اصلی (فقط او می‌تواند ادمین اضافه/حذف کند)
-MAIN_ADMIN_ID = 8489061532
+MAIN_ADMIN_ID = 7363962357
 ENV_ADMIN_IDS = set(ADMIN_IDS)  # ادمین‌های داخل تنظیمات هم ادمین اصلی حساب می‌شوند
 ADMIN_IDS.add(MAIN_ADMIN_ID)
-BOT_NAME = os.getenv("BOT_NAME", "پروکسیوم")
+BOT_NAME = os.getenv("BOT_NAME", "VIP VPN")
 DB_PATH = os.getenv("DB_PATH", "bot.db")
 RTL = os.getenv("RTL_BUTTONS", "1") == "1"      # دکمه اول هر ردیف سمت راست باشد
 USER_PREFIX = os.getenv("USER_PREFIX", "px")
@@ -206,6 +206,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS payments(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, amount INTEGER,
         bonus INTEGER DEFAULT 0, photo TEXT, status TEXT DEFAULT 'pending', created INTEGER);
     CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY, v TEXT);
+    CREATE TABLE IF NOT EXISTS support_tickets(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, 
+        message TEXT, created INTEGER, status TEXT DEFAULT 'open');
     """)
     for k, v in DEFAULT_SETTINGS.items():
         ex("INSERT OR IGNORE INTO settings(k,v) VALUES(?,?)", (k, v))
@@ -630,6 +632,7 @@ async def show(update: Update, text, kb=None):
 
 def set_state(ctx, *s): ctx.user_data["state"] = s
 def clear_state(ctx): ctx.user_data.pop("state", None)
+def get_state(ctx): return ctx.user_data.get("state", ())
 
 # ───────────────────────── اتصال به پنل‌ها ─────────────────────────
 def _http(p):
@@ -1172,6 +1175,15 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         return await show(update, f"✅ سرویس <code>{html.escape(s['username'])}</code> به کاربر <code>{b}</code> منتقل شد.", back_more())
     if d == "test": return await do_test(update, ctx, uid)
     if d == "more": return await page_more(update, uid)
+    if d == "support": 
+        set_state(ctx, "support")
+        return await show(update, render("support_intro"), [row(btn("بازگشت", "home", RED, "back"))])
+    if d.startswith("del:"):
+        sid = int(d[4:])
+        s = q("SELECT * FROM services WHERE id=?", (sid,), True)
+        if not s or s["user_id"] != uid: return
+        ex("DELETE FROM services WHERE id=?", (sid,))
+        return await show(update, render("support_sent"), [row(btn("بازگشت", "subs", RED, "back"))])
     if d in ("help", "rules"): return await show(update, render(d), [row(btn("بازگشت", "more", RED, "back"))])
     if d == "ref":
         me = await ctx.bot.get_me()
