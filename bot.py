@@ -27,7 +27,7 @@ ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "123456789").replace(" ", ""
 MAIN_ADMIN_ID = 8489061532
 ENV_ADMIN_IDS = set(ADMIN_IDS)  # ادمین‌های داخل تنظیمات هم ادمین اصلی حساب می‌شوند
 ADMIN_IDS.add(MAIN_ADMIN_ID)
-BOT_NAME = os.getenv("BOT_NAME", "VIP PANEL")
+BOT_NAME = os.getenv("BOT_NAME", "پروکسیوم")
 DB_PATH = os.getenv("DB_PATH", "bot.db")
 RTL = os.getenv("RTL_BUTTONS", "1") == "1"      # دکمه اول هر ردیف سمت راست باشد
 USER_PREFIX = os.getenv("USER_PREFIX", "px")
@@ -2012,4 +2012,4 @@ def main():
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
-    main(
+    main()
