@@ -24,7 +24,7 @@ except ImportError:
 BOT_TOKEN = os.getenv("BOT_TOKEN", "PUT_YOUR_TOKEN_HERE")
 ADMIN_IDS = {int(x) for x in os.getenv("ADMIN_IDS", "123456789").replace(" ", "").split(",") if x}
 # ➕ ادمین اصلی (فقط او می‌تواند ادمین اضافه/حذف کند)
-MAIN_ADMIN_ID = 8489061532
+MAIN_ADMIN_ID = 7363962357
 ENV_ADMIN_IDS = set(ADMIN_IDS)  # ادمین‌های داخل تنظیمات هم ادمین اصلی حساب می‌شوند
 ADMIN_IDS.add(MAIN_ADMIN_ID)
 BOT_NAME = os.getenv("BOT_NAME", "پروکسیوم")
@@ -64,16 +64,19 @@ EMOJI = {
     "bot": "⚡️", "fire": "♨️", "hello": "👋", "buy": "🛍", "subs": "✅", "wallet": "🤑",
     "test": "🆓", "support": "💬", "channel": "📣", "account": "👤", "more": "😎",
     "admin": "🛠", "back": "🔙", "m1": "1️⃣", "m3": "3️⃣", "m6": "6️⃣", "m12": "🔟",
+    "tariff1": "1️⃣", "tariff3": "3️⃣", "tariff6": "6️⃣",
     "all": "🔥", "suggest": "🤔", "gift": "🎁", "price": "💲", "volume": "🟢", "time": "⏳",
     "shop": "🏪", "card": "💳", "ok": "✅", "no": "❌", "panel": "🔌", "plan": "📦",
     "ban": "🚫", "unban": "♻️", "text": "✏️", "stats": "📊", "search": "🔎", "bridge": "🌉",
     "bc": "📢", "pin": "📍", "point": "👇", "link": "🔗", "qr": "🔳", "addbal": "➕",
     "subbal": "➖", "emoji": "😀", "settings": "⚙️", "help": "📖", "rules": "📜",
     "ref": "🤝", "phone": "📱", "chest": "🧰", "bag": "🛍",
+    "layout": "🧩", "searchsvc": "🔎", "cleanup": "🧹", "layout1": "1️⃣", "layout2": "2️⃣", "layout3": "3️⃣", "original": "♻️",
+    "startlayout": "🏠", "morelayout": "😎", "trx": "🧾", "today": "📅", "yesterday": "⏪", "last7": "7️⃣", "last30": "📆", "alltrx": "📚",
     "ip": "📍", "usage": "📊", "mysettings": "⚙️", "remind": "🔔", "transfer": "🔁", "ipbox": "🛡",  # ➕
 }
 # ➕ ایموجی دکمه‌های جدید (تمدید، حذف، تغییر نام، کد تخفیف، تراکنش‌ها)
-EMOJI.update({"renew": "🔄", "delsrv": "🗑", "rename": "📝", "discount": "🎟", "trx": "🧾"})
+EMOJI.update({"renew": "🔄", "delsrv": "🗑", "rename": "📝", "discount": "🎟", "trx": "🧾", "ticket": "🎫", "direct": "👤"})
 
 # ───────────────────────── متن‌های قابل ویرایش ─────────────────────────
 # متغیرها: {BOT} {USER} {ID} {BALANCE} {PRICE} {GB} {DAYS} {LINK} {SERVICES} {DATE} ...
@@ -185,6 +188,7 @@ DEFAULT_SETTINGS = {
     "support_url": "https://t.me/telegram", "channel_url": "https://t.me/telegram",
     "premium_on": "1", "bridge_url": "", "start_sticker": "", "suggest_plan": "",
     "extra_admins": "",
+    "button_layout": "1",
 }
 SETTING_TITLES = {
     "card_number": "شماره کارت", "card_owner": "نام صاحب کارت", "test_gb": "حجم تست (گیگ)",
@@ -304,7 +308,29 @@ def btn(text, data=None, style=None, ek=None, url=None):
         return IKB(label, callback_data=data or "noop", api_kwargs=kw)
 
 def row(*b):
+    """چیدمان قابل تنظیم دکمه‌ها؛ حالت ۱ همان رفتار قبلی است."""
     b = [x for x in b if x is not None]
+    layout = S("button_layout") or "1"
+    if layout == "1":
+        return list(reversed(b)) if RTL else b
+    if layout == "2":
+        return b if RTL else list(reversed(b))
+    if layout == "3":
+        # چیدمان سوم: دکمه اول به انتهای ردیف می‌رود.
+        return (b[1:] + b[:1]) if len(b) > 1 else b
+    # حالت ۴: اورجینال، مستقل از تنظیمات RTL.
+    return list(reversed(b)) if RTL else b
+
+def section_row(section, *b):
+    """چیدمان مستقل برای منوی استارت و سایر امکانات."""
+    b = [x for x in b if x is not None]
+    layout = S("layout:" + section) or "4"
+    if layout == "1":
+        return list(reversed(b)) if RTL else b
+    if layout == "2":
+        return b if RTL else list(reversed(b))
+    if layout == "3":
+        return (b[1:] + b[:1]) if len(b) > 1 else b
     return list(reversed(b)) if RTL else b
 
 def is_admin(uid): return uid in ADMIN_IDS
@@ -332,18 +358,26 @@ async def admin_admins(update):
 
 # ➕ ایموجی پریمیوم با کد عددی
 def parse_emoji_ids(txt):
-    """کدهای عددی ایموجی را از متن درمی‌آورد؛ مثل 5920499378291744339 یا [5920499378291744339]"""
+    """کد عددی custom emoji را از متن درمی‌آورد؛ کد فارسی/لاتین و جداکننده‌ها را قبول می‌کند."""
     txt = (txt or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
-    return re.findall(r"[0-9]{15,20}", txt)
+    # custom_emoji_id تلگرام یک شناسه عددی است، نه file_id یا message_id.
+    return re.findall(r"(?<!\d)[0-9]{15,20}(?!\d)", txt)
 
 async def check_emoji(bot, eid):
-    """بررسی کد ایموجی از سرور تلگرام؛ خروجی: (معتبر؟, ایموجی جایگزین)"""
+    """اعتبارسنجی واقعی custom_emoji_id با Telegram Bot API.
+    خطای شبکه/دسترسی نباید به‌اشتباه کد را معتبر اعلام کند.
+    """
+    eid = str(eid or "").strip()
+    if not re.fullmatch(r"[0-9]{15,20}", eid):
+        return False, None
     try:
         st = await bot.get_custom_emoji_stickers([eid])
-        if st: return True, (st[0].emoji or "⭐️")
+        if st and getattr(st[0], "type", None) == "custom_emoji":
+            return True, (st[0].emoji or "⭐️")
         return False, None
     except Exception as e:
-        log.warning("check_emoji %s: %s", eid, e); return True, "⭐️"
+        log.warning("custom emoji validation failed for %s: %s", eid, e)
+        return False, None
 
 def strip_premium(text, markup):
     """اگر تلگرام ایموجی پریمیوم را قبول نکرد، نسخه ساده (بدون پریمیوم) ساخته می‌شود."""
@@ -534,6 +568,40 @@ async def _mz_create(c, t, body, h):
     if r.status_code >= 400: raise Exception(f"HTTP {r.status_code}: {r.text[:300]}")
     return r.json()
 
+def _pg_group_list(payload):
+    if isinstance(payload, list):
+        return payload
+    if not isinstance(payload, dict):
+        return []
+    for key in ("groups", "data", "items", "results"):
+        value = payload.get(key)
+        if isinstance(value, list):
+            return value
+        if isinstance(value, dict):
+            found = _pg_group_list(value)
+            if found:
+                return found
+    return []
+
+async def _pg_active_group_ids(c, h):
+    # Pasarguard versions differ: some paginate /groups and newer versions
+    # expose /groups/simple. Read-only lookup, no project data is changed.
+    for path in ("/api/groups?all=true", "/api/groups/simple?all=true",
+                 "/api/groups", "/api/groups/simple", "/api/group"):
+        try:
+            r = await c.get(path, headers=h)
+            if r.status_code >= 400:
+                continue
+            groups = _pg_group_list(r.json())
+            ids = [int(g["id"]) for g in groups
+                   if isinstance(g, dict) and str(g.get("id", "")).isdigit()
+                   and not g.get("is_disabled", g.get("disabled", False))]
+            if ids:
+                return ids
+        except Exception as e:
+            log.warning("pasarguard groups %s: %s", path, e)
+    return []
+
 def _xui_root(t): return XUI_PREFIX[t].split("/api")[0].split("/API")[0]   # /panel یا /xui
 
 async def _xui_inbound(c, t, inb):
@@ -707,13 +775,10 @@ async def panel_create(p, username, gb, days):
                 body["inbounds"] = {}
             else:
                 body["group_ids"] = _ids(extra); body["proxy_settings"] = {}
-                if not body["group_ids"]:  # ➕ اگر گروه وارد نشده، همه گروه‌های فعال پنل
-                    try:
-                        gj = (await c.get("/api/groups", headers=h)).json()
-                        gl = gj.get("groups", []) if isinstance(gj, dict) else (gj or [])
-                        body["group_ids"] = [g["id"] for g in gl if not g.get("is_disabled")]
-                    except Exception as e:
-                        log.warning("pasarguard groups %s", e)
+                if not body["group_ids"]:
+                    body["group_ids"] = await _pg_active_group_ids(c, h)
+                if not body["group_ids"]:
+                    raise Exception("هیچ گروه فعالی در پاسارگارد پیدا نشد؛ یک گروه فعال بسازید یا شناسه گروه را در تنظیمات پنل وارد کنید.")
             j = await _mz_create(c, t, body, h)  # ➕ با پیام خطای دقیق + سازگاری پاسارگارد
             sub, links = j.get("subscription_url") or "", j.get("links") or []
         elif t == "marzneshin":
@@ -776,21 +841,117 @@ async def panel_info(p, username):
     return {"status": st, "used": used / 1024 ** 3, "total": total / 1024 ** 3 if total else 0,
             "expire": jdate(exp) if exp else "نامحدود"}
 
+def _gb(value):
+    try:
+        return float(value or 0) / 1024 ** 3
+    except Exception:
+        return 0
+
+def _pick(obj, *keys, default=None):
+    if not isinstance(obj, dict):
+        return default
+    for key in keys:
+        value = obj.get(key)
+        if value is not None and value != "":
+            return value
+    return default
+
+async def panel_status(p):
+    """وضعیت کلی پنل، با سازگاری نسبی بین نسخه‌های مختلف."""
+    t = p["ptype"]
+    out = {"cpu": "-", "ram": "-", "swap": "-", "disk": "-", "panel_status": "نامشخص",
+           "version": "-", "down": 0, "up": 0, "down_speed": 0, "up_speed": 0,
+           "clients": 0, "main_accounts": 0, "user_down": 0, "user_up": 0,
+           "user_total": 0, "active_volume": 0}
+    if t == "manual":
+        out["panel_status"] = "فروش دستی، بدون اتصال به پنل"
+        return out
+    async with _http(p) as c:
+        if t in ("marzban", "pasarguard", "marzneshin"):
+            h = await _token(c, p)
+            data = {}
+            for path in ("/api/system", "/api/system/status", "/api/admin/system"):
+                try:
+                    r = await c.get(path, headers=h)
+                    if r.status_code < 400 and isinstance(r.json(), dict):
+                        data = r.json(); break
+                except Exception:
+                    pass
+            info = data.get("data", data) if isinstance(data, dict) else {}
+            cpu = _pick(info, "cpu", "cpu_percent", "cpu_usage")
+            ru = _pick(info, "ram_used", "memory_used", "used_memory")
+            rt = _pick(info, "ram_total", "memory_total", "total_memory")
+            if cpu is not None: out["cpu"] = f"{float(cpu):.1f}%"
+            if ru is not None or rt is not None:
+                out["ram"] = f"{_gb(ru):.2f} GB / {_gb(rt):.2f} GB"
+            out["swap"] = _pick(info, "swap", "swap_usage", default="-")
+            out["disk"] = _pick(info, "disk", "disk_usage", default="-")
+            out["version"] = _pick(info, "version", "app_version", default="-")
+            out["panel_status"] = "فعال ✅"
+        elif t in XUI_PREFIX:
+            await _xlogin(c, p)
+            root = XUI_PREFIX[t].split("/api")[0].split("/API")[0]
+            for path in (root + "/api/server/status", root + "/api/server/status/"):
+                try:
+                    r = await c.get(path)
+                    if r.status_code < 400:
+                        j = r.json()
+                        info = j.get("obj", j.get("data", j)) if isinstance(j, dict) else {}
+                        out["cpu"] = f"{float(_pick(info, 'cpu', 'cpu_percent', default=0)):.1f}%"
+                        out["ram"] = f"{_gb(_pick(info, 'mem', 'mem_used', default=0)):.2f} GB / {_gb(_pick(info, 'mem_total', 'memTotal', default=0)):.2f} GB"
+                        out["swap"] = f"{_gb(_pick(info, 'swap', 'swap_used', default=0)):.2f} GB / {_gb(_pick(info, 'swap_total', 'swapTotal', default=0)):.2f} GB"
+                        out["disk"] = f"{_gb(_pick(info, 'disk', 'disk_used', default=0)):.2f} GB / {_gb(_pick(info, 'disk_total', 'diskTotal', default=0)):.2f} GB"
+                        out["version"] = _pick(info, "version", "xray_version", default="-")
+                        out["panel_status"] = "فعال ✅"
+                        break
+                except Exception:
+                    pass
+    return out
+
+def panel_status_text(p, s):
+    return (
+        f"🛍 <b>وضعیت سرور {html.escape(p['name'])} 🚩</b>\n"
+        f"╔══════════════════════╗\n<b>📊 وضعیت صفحه اصلی سرور</b>\n"
+        f"╠ CPU: <b>{s['cpu']}</b>\n╠ وضعیت رم: <b>{s['ram']}</b>\n"
+        f"╠ لینک پنل: <code>{html.escape(p['url'] or '-')}</code>\n"
+        f"╠ SWAP: <b>{s['swap']}</b>\n╠ هارد: <b>{s['disk']}</b>\n"
+        f"╠ وضعیت پنل: <b>{s['panel_status']}</b>\n╠ نسخه پنل: <b>{html.escape(str(s['version']))}</b>\n"
+        f"╠ دانلود مصرفی: <b>{_gb(s['down']):.2f} GB</b>\n╠ آپلود مصرفی: <b>{_gb(s['up']):.2f} GB</b>\n"
+        f"╠ دانلود بر ثانیه: <b>{s['down_speed']} MB</b>\n╚ آپلود بر ثانیه: <b>{s['up_speed']} MB</b>\n\n"
+        f"╔══════════════════════╗\n<b>👥 وضعیت لیست اکانت‌ها</b>\n"
+        f"╠ تعداد کل کلاینت‌ها: <b>{s['clients']}</b>\n╠ تعداد اکانت‌های اصلی: <b>{s['main_accounts']}</b>\n"
+        f"╠ دانلود کاربران: <b>{_gb(s['user_down']):.2f} GB</b>\n╠ آپلود کاربران: <b>{_gb(s['user_up']):.2f} GB</b>\n"
+        f"╠ مجموع مصرف: <b>{_gb(s['user_total']):.2f} GB</b>\n"
+        f"╚ حجم فعال خریداری‌شده: <b>{s['active_volume']:.2f} GB</b>"
+    )
+
 # ───────────────────────── کیبوردها ─────────────────────────
 def main_kb(uid):
     kb = [
-        row(btn("خرید اشتراک", "buy", GREEN, "buy")),
-        row(btn("اشتراک ها", "subs", None, "subs"), btn("افزایش موجودی", "account", None, "wallet")),
-        row(btn("تست قبل از خرید", "test", RED, "test")),
-        row(btn("پشتیبانی", url=S("support_url"), ek="support"), btn("کانال", url=S("channel_url"), ek="channel"),
-            btn("حساب", "account", None, "account")),
-        row(btn("سایر امکانات", "more", None, "more")),
+        section_row("start", btn("خرید اشتراک", "buy", GREEN, "buy")),
+        section_row("start", btn("اشتراک ها", "subs", None, "subs"), btn("افزایش موجودی", "account", None, "wallet")),
+        section_row("start", btn("تست قبل از خرید", "test", RED, "test")),
+        section_row("start", btn("پشتیبانی", "supportmenu", None, "support"), btn("کانال", url=S("channel_url"), ek="channel"), btn("حساب", "account", None, "account")),
+        section_row("start", btn("سایر امکانات", "more", None, "more")),
     ]
-    if is_admin(uid):  # دکمه مخفی؛ فقط ادمین می‌بیند
-        kb.append(row(btn("پنل مدیریت", "admin", BLUE, "admin")))
+    if is_admin(uid):
+        kb.append(section_row("start", btn("پنل مدیریت", "admin", BLUE, "admin")))
     return kb
 
 def back_home(): return [row(btn("بازگشت به منوی اصلی", "home", RED, "back"))]
+
+def layout_choices(section, title, back="a:layout"):
+    current = S("layout:" + section) or "4"
+    return [
+        row(btn("چیدمان اول" + (" ✅" if current == "1" else ""), f"lay:{section}:1", BLUE, "layout1")),
+        row(btn("چیدمان دوم" + (" ✅" if current == "2" else ""), f"lay:{section}:2", BLUE, "layout2")),
+        row(btn("چیدمان سوم" + (" ✅" if current == "3" else ""), f"lay:{section}:3", BLUE, "layout3")),
+        row(btn("حالت اورجینال" + (" ✅" if current == "4" else ""), f"lay:{section}:4", GREEN, "original")),
+    ] + admin_back(back)
+
+def layout_kb():
+    return [row(btn("چیدمان بخش استارت", "laymenu:start", BLUE, "startlayout")),
+            row(btn("چیدمان سایر امکانات", "laymenu:more", BLUE, "morelayout"))] + admin_back("admin")
 
 def admin_kb():
     return [
@@ -802,7 +963,8 @@ def admin_kb():
         row(btn("تنظیمات تست", "a:test", None, "test"), btn("تنظیمات پرداخت", "a:pay", None, "card")),
         row(btn("جستجوی کاربر در پنل", "a:search", None, "search"), btn("آدرس پل", "set:bridge_url", None, "bridge")),
         row(btn("تنظیمات عمومی", "a:gen", None, "settings")),
-        row(btn("رنگ دکمه‌ها", "a:color", None, "settings"), btn("مدیریت ادمین‌ها", "a:admins", None, "admin")),
+        row(btn("رنگ دکمه‌ها", "a:color", None, "settings"), btn("چیدمان دکمه‌ها", "a:layout", None, "layout")),
+        row(btn("مدیریت ادمین‌ها", "a:admins", None, "admin")),
         row(btn("آدرس سرور اطلاعات IP", "set:ip_web_url", None, "ip")),
         row(btn("تراکنش‌ها", "a:trx", BLUE, "trx"), btn("کدهای تخفیف", "a:dc", GREEN, "discount")),  # ➕
         row(btn("بازگشت", "home", RED, "back")),
@@ -956,7 +1118,8 @@ async def page_account(update, uid):
     text = render("account", ID=uid, USER=html.escape(u["name"] or ""), PHONE=u["phone"] or "ثبت نشده",
                   GROUP=u["grp"], JOINED=jdate(u["created"]), REF=uid, BALANCE=money(u["balance"]),
                   SERVICES=services, INVOICES=inv, REFS=refs, DATE=jdate())
-    kb = [row(btn("افزایش موجودی", "topup", GREEN, "bag"), btn("شارژ ویژه با هدیه", "gift", GREEN, "gift"))]
+    kb = [row(btn("افزایش موجودی", "topup", GREEN, "bag"), btn("شارژ ویژه با هدیه", "gift", GREEN, "gift")),
+          row(btn("کل تراکنش‌های من", "utrx:today", BLUE, "trx"))]
     if not u["phone"]: kb.append(row(btn("ثبت شماره تماس", "phone", None, "phone")))
     kb += back_home()
     await show(update, text, kb)
@@ -983,7 +1146,40 @@ async def page_subs(update, uid):
     for s in rows:
         st = "🟢" if s["status"] == "active" and s["expire"] > time.time() else ("⏳" if s["status"] == "pending" else "🔴")
         kb.append(row(btn(f"{st} {s['title'] or s['username']} | {s['gb']}GB{' (تست)' if s['is_test'] else ''}", f"sv:{s['id']}")))
-    await show(update, f"{E('subs')} <b>اشتراک‌های شما</b>", kb + back_home())
+    controls = [row(btn("جستجوی سرویس", "subsearch", BLUE, "searchsvc"),
+                     btn("پاک‌سازی منقضی‌ها", "subclean", RED, "cleanup"))]
+    await show(update, f"{E('subs')} <b>اشتراک‌های شما</b>", kb + controls + back_home())
+
+async def page_sub_search(update, uid, term):
+    term = (term or "").strip()
+    if not term:
+        return await page_subs(update, uid)
+    rows = q("SELECT * FROM services WHERE user_id=? AND status!='deleted' AND (username LIKE ? OR title LIKE ?) ORDER BY id DESC LIMIT 30",
+             (uid, f"%{term}%", f"%{term}%"))
+    if not rows:
+        return await show(update, "سرویسی با این مشخصات پیدا نشد.",
+                          [row(btn("جستجوی دوباره", "subsearch", BLUE, "searchsvc"))] + back_home())
+    kb = [row(btn(f"{'🟢' if s['status']=='active' else '🔴'} {s['title'] or s['username']} | {s['gb']}GB",
+                  f"sv:{s['id']}")) for s in rows]
+    await show(update, f"🔎 <b>نتیجه جستجو برای:</b> <code>{html.escape(term)}</code>",
+               kb + [row(btn("جستجوی دوباره", "subsearch", BLUE, "searchsvc"))] + back_home())
+
+async def cleanup_expired_services(update, ctx, uid):
+    rows = q("SELECT * FROM services WHERE user_id=? AND status!='deleted' AND expire<=?",
+             (uid, int(time.time())))
+    if not rows:
+        return await show(update, "✅ سرویس منقضی‌شده‌ای برای پاک‌سازی نیست.", back_home())
+    removed = 0
+    for s in rows:
+        pn = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True)
+        if pn and pn["ptype"] != "manual" and s["status"] != "pending":
+            try:
+                await panel_delete(pn, s["username"])
+            except Exception as e:
+                log.warning("cleanup expired %s: %s", s["id"], e)
+        ex("UPDATE services SET status='deleted' WHERE id=?", (s["id"],))
+        removed += 1
+    return await show(update, f"✅ {removed} سرویس منقضی پاک‌سازی شد.", back_home())
 
 async def page_service(update, uid, sid):
     s = q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (sid, uid), True)  # ➕
@@ -1009,6 +1205,22 @@ async def page_service(update, uid, sid):
     kb = [r for r in kb if r]  # ➕
     await show(update, text, kb)
 
+async def page_user_trx(update, uid, per="today"):
+    if per not in TRX_PERIODS: per = "today"
+    a, b = trx_range(per)
+    buys = q("SELECT * FROM services WHERE user_id=? AND is_test=0 AND created>=? AND created<?", (uid, a, b))
+    rens = q("SELECT * FROM txlog WHERE user_id=? AND kind='renew' AND created>=? AND created<?", (uid, a, b))
+    pays = q("SELECT * FROM payments WHERE user_id=? AND status='ok' AND created>=? AND created<?", (uid, a, b))
+    lines = [f"{E('trx')} <b>تراکنش‌های من | {TRX_PERIODS[per]}</b>", "<blockquote>"]
+    lines += [f"🛒 خرید سرویس: {money(sum(x['price'] or 0 for x in buys))} تومان" if buys else "🛒 خرید سرویس: ۰"]
+    lines += [f"🔄 تمدید: {money(sum(x['amount'] or 0 for x in rens))} تومان" if rens else "🔄 تمدید: ۰"]
+    lines += [f"💳 شارژ کیف پول: {money(sum(x['amount'] or 0 for x in pays))} تومان" if pays else "💳 شارژ کیف پول: ۰"]
+    lines += [f"🧾 تعداد عملیات: {len(buys)+len(rens)+len(pays)}", "</blockquote>"]
+    kb = [row(btn("امروز", "utrx:today", BLUE, "today"), btn("دیروز", "utrx:yday", BLUE, "yesterday")),
+          row(btn("۷ روز اخیر", "utrx:7", BLUE, "last7"), btn("۳۰ روز اخیر", "utrx:30", BLUE, "last30")),
+          row(btn("کل تراکنش‌ها", "utrx:all", GREEN, "alltrx"))]
+    await show(update, "\n".join(lines), kb + back_home())
+
 async def do_test(update, ctx, uid):
     u = get_user(uid)
     if S("test_enabled") != "1": return await show(update, "اکانت تست فعلاً غیرفعال است.", back_home())
@@ -1027,16 +1239,26 @@ async def do_test(update, ctx, uid):
     await deliver(ctx, uid, sid, "test_delivery")
 
 async def page_more(update, uid):
-    kb = [row(btn("راهنما", "help", None, "help"), btn("قوانین", "rules", None, "rules")),
-          row(btn("زیرمجموعه‌گیری", "ref", GREEN, "ref"), btn("حساب کاربری", "account", None, "account"))]
-    kb = [row(btn("اطلاعات IP من", "ip", GREEN, "ip")),  # ➕ مثل طرح جدید
-          row(btn("گزارش مصرف", "usage", None, "usage"), btn("پیشنهاد سرویس", "suggest", None, "suggest")),
-          row(btn("تنظیمات من", "myset", None, "mysettings"), btn("تنظیم یادآورها", "remind", None, "remind")),
-          row(btn("انتقال سرویس", "transfer", None, "transfer"))] + kb
+    kb = [section_row("more", btn("راهنما", "help", None, "help"), btn("قوانین", "rules", None, "rules")),
+          section_row("more", btn("زیرمجموعه‌گیری", "ref", GREEN, "ref"), btn("تعرفه ها", "tariffs", None, "price"))]
+    kb = [section_row("more", btn("اطلاعات IP من", "ip", GREEN, "ip")),
+          section_row("more", btn("گزارش مصرف", "usage", None, "usage"), btn("پیشنهاد سرویس", "suggest", None, "suggest")),
+          section_row("more", btn("تنظیمات من", "myset", None, "mysettings"), btn("تنظیم یادآورها", "remind", None, "remind")),
+          section_row("more", btn("انتقال سرویس", "transfer", None, "transfer"))] + kb
     await show(update, render("more"), kb + back_home())
 
 # ➕ صفحات جدید سایر امکانات
 def back_more(): return [row(btn("بازگشت به سایر امکانات", "more", RED, "back"))]
+
+async def page_tariffs(update, ctx, uid):
+    """منوی تعرفه‌ها؛ قیمت و پلن‌ها از همان داده‌های فعلی بخش خرید خوانده می‌شوند."""
+    text = "💲 <b>تعرفه ها</b>\n\nمدت اشتراک را انتخاب کنید:"
+    kb = [
+        row(btn("یک ماهه", "pl:1", BLUE, "tariff1")),
+        row(btn("سه ماهه", "pl:3", BLUE, "tariff3")),
+        row(btn("شش ماهه", "pl:6", BLUE, "tariff6")),
+    ] + back_more()
+    await show(update, text, kb)
 
 async def page_ip(update, uid):
     link = ip_link(uid)
@@ -1481,6 +1703,7 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if d.startswith("pay:"):
         _, a, b = d.split(":"); return await do_pay(update, ctx, uid, int(a), int(b))
     if d == "account": clear_state(ctx); return await page_account(update, uid)
+    if d.startswith("utrx:"): return await page_user_trx(update, uid, d[5:])
     if d == "topup": return await page_topup(update)
     if d == "gift": return await page_topup(update, True)
     if d.startswith("ta:"):
@@ -1488,7 +1711,16 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if d.startswith("tc:"):
         set_state(ctx, "amount", d[3:] == "1")
         return await show(update, "💳 مبلغ دلخواه را به تومان بفرستید (فقط عدد):", [row(btn("انصراف", "account", RED, "no"))])
-    if d == "subs": return await page_subs(update, uid)
+    if d == "subs": clear_state(ctx); return await page_subs(update, uid)
+    if d == "subsearch":
+        set_state(ctx, "subsearch")
+        return await show(update, "🔎 نام یا شناسه سرویس را بفرست:",
+                          [row(btn("انصراف", "subs", RED, "no"))])
+    if d == "subclean":
+        return await show(update, "⚠️ سرویس‌های منقضی از فهرست ربات حذف می‌شوند و حذف آن‌ها از پنل هم تلاش می‌شود. ادامه می‌دهی؟",
+                          [row(btn("بله، پاک‌سازی کن", "subclean:yes", RED, "cleanup"),
+                               btn("انصراف", "subs", GREEN, "back"))])
+    if d == "subclean:yes": return await cleanup_expired_services(update, ctx, uid)
     if d.startswith("sv:"): return await page_service(update, uid, int(d[3:]))
     if d.startswith("qr:"):
         s = q("SELECT * FROM services WHERE id=? AND user_id=?", (int(d[3:]), uid), True)
@@ -1543,7 +1775,9 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         except Exception: pass
         return await show(update, f"✅ سرویس <code>{html.escape(s['username'])}</code> به کاربر <code>{b}</code> منتقل شد.", back_more())
     if d == "test": return await do_test(update, ctx, uid)
+    if d == "supportmenu": return await added_support_menu(update, ctx)
     if d == "more": return await page_more(update, uid)
+    if d == "tariffs": return await page_tariffs(update, ctx, uid)
     if d in ("help", "rules"): return await show(update, render(d), [row(btn("بازگشت", "more", RED, "back"))])
     if d == "ref":
         me = await ctx.bot.get_me()
@@ -1555,6 +1789,17 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     if not adm: return
     # ---------- ادمین ----------
+    if d == "a:layout": return await show(update, f"{E('layout')} <b>چیدمان دکمه‌ها</b>\nبخش موردنظر را انتخاب کن:", layout_kb())
+    if d.startswith("laymenu:"):
+        section = d.split(":", 1)[1]
+        if section not in {"start", "more"}: return await show(update, "بخش نامعتبر است.", layout_kb())
+        title = "استارت" if section == "start" else "سایر امکانات"
+        return await show(update, f"{E('layout')} <b>چیدمان {title}</b>", layout_choices(section, title))
+    if d.startswith("lay:"):
+        _, section, value = d.split(":")
+        if section in {"start", "more"} and value in {"1", "2", "3", "4"}:
+            set_S("layout:" + section, value)
+        return await show(update, f"✅ چیدمان ذخیره شد.", layout_choices(section, ""))
     if d == "admin": clear_state(ctx); return await show(update, f"{E('admin')} <b>پنل مدیریت</b>", admin_kb())
     if d == "a:stats":
         now = int(time.time())
@@ -1595,8 +1840,27 @@ async def on_callback(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
              f"تنظیمات اضافه: <code>{html.escape(p['extra'] or '-')}</code>")
         kb = [row(btn("تست اتصال", f"pt:{p['id']}", BLUE, "search"),
                   btn("غیرفعال کن" if p["active"] else "فعال کن", f"pg:{p['id']}", RED if p["active"] else GREEN)),
+              row(btn("وضعیت پنل", f"pi:{p['id']}", BLUE, "stats")),
               row(btn("حذف پنل", f"pd:{p['id']}", RED, "no"))] + admin_back("a:panels")
         return await show(update, t, kb)
+    if d.startswith("pi:"):
+        p = q("SELECT * FROM panels WHERE id=?", (int(d[3:]),), True)
+        if not p: return await show(update, "پنل پیدا نشد.", admin_back("a:panels"))
+        try:
+            status = await panel_status(p)
+            rows = q("SELECT * FROM services WHERE panel_id=? AND status!='deleted'", (p["id"],))
+            status["clients"] = len(rows)
+            status["main_accounts"] = sum(1 for r in rows if not r["is_test"])
+            status["active_volume"] = sum(float(r["gb"] or 0) for r in rows
+                                          if r["status"] == "active" and (r["expire"] or 0) > time.time())
+            status["user_total"] = status["user_down"] + status["user_up"]
+            return await show(update, panel_status_text(p, status),
+                              [row(btn("🔄 بروزرسانی وضعیت", f"pi:{p['id']}", BLUE, "search")),
+                               row(btn("بازگشت به پنل", f"pv:{p['id']}", RED, "back"))])
+        except Exception as e:
+            return await show(update, f"❌ دریافت وضعیت پنل ناموفق بود.\n<code>{html.escape(str(e))[:500]}</code>",
+                              [row(btn("تلاش دوباره", f"pi:{p['id']}", BLUE, "search")),
+                               row(btn("بازگشت به پنل", f"pv:{p['id']}", RED, "back"))])
     if d.startswith("pt:"):
         ok, msg = await panel_test(q("SELECT * FROM panels WHERE id=?", (int(d[3:]),), True))
         return await cq.message.reply_text(msg)
@@ -1795,6 +2059,9 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         _, a, b = back.split(":")
         if back.startswith("inv:"): return await page_invoice(update, uid, int(a), int(b))
         return await page_renew_invoice(update, uid, int(a), int(b))
+    if name == "subsearch":
+        clear_state(ctx)
+        return await page_sub_search(update, uid, txt)
     if name == "srename":  # ➕ تغییر نام سرویس
         new = " ".join(txt.split())
         if not new or len(new) > 32: return await m.reply_text("نام باید بین ۱ تا ۳۲ کاراکتر باشد. دوباره بفرست:")
@@ -1857,7 +2124,7 @@ async def on_message(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         if ids: eid, fb = ids[0], entity_fb(m, ids[0])
         elif parse_emoji_ids(txt):
             eid = parse_emoji_ids(txt)[0]; valid, fb = await check_emoji(ctx.bot, eid)
-            if not valid: return await m.reply_text("❌ این کد ایموجی معتبر نیست.")
+            if not valid: return await m.reply_text("❌ این کد custom emoji معتبر نیست یا تلگرام فعلاً آن را در دسترس ربات قرار نداده است.")
         else:
             return await m.reply_text("ایموجی پریمیوم پیدا نکردم. (فرستنده باید تلگرام پریمیوم داشته باشد تا ایموجی پریمیوم بفرستد)")
         ctx.user_data["eq"] = (eid, fb)
@@ -1997,19 +2264,1258 @@ async def job_followup(ctx: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             log.warning("followup %s: %s", s["id"], e)
 
+
+# ───────────────────────── افزودنی‌های جدید: پشتیبانی و ابزارهای کمکی ─────────────────────────
+# این بخش فقط به کد قبلی اضافه شده و هیچ قابلیت قبلی را حذف یا جایگزین نمی‌کند.
+import shutil
+
+async def init_added_features():
+    CON.executescript("""
+    CREATE TABLE IF NOT EXISTS support_tickets(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        subject TEXT DEFAULT '', status TEXT DEFAULT 'open', created INTEGER,
+        updated INTEGER, admin_id INTEGER DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS support_messages(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER NOT NULL,
+        sender_id INTEGER NOT NULL, body TEXT, created INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS audit_log(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, actor_id INTEGER,
+        action TEXT, target TEXT DEFAULT '', details TEXT DEFAULT '', created INTEGER
+    );
+    """)
+    CON.commit()
+    # افزودنی‌های رابط تیکت: فقط ثبت تنظیمات/کلیدها، بدون حذف یا تغییر قابلیت‌های قبلی
+    EMOJI.update({"ticket_reply": "↩️", "ticket_close": "🔒"})
+    BTN_GROUPS.update({
+        "ticket_reply": "دکمه پاسخ تیکت",
+        "ticket_close": "دکمه بستن تیکت",
+        "ticket_open": "دکمه باز کردن تیکت",
+    })
+    for _n in BTN_GROUPS.values():
+        if _n not in BTN_NAMES:
+            BTN_NAMES.append(_n)
+
+def added_audit(actor, action, target='', details=''):
+    try: ex("INSERT INTO audit_log(actor_id,action,target,details,created) VALUES(?,?,?,?,?)", (actor,action,str(target),str(details)[:1000],int(time.time())))
+    except Exception as e: log.warning("audit: %s", e)
+
+def added_ticket_kb(tid, admin=False):
+    if admin:
+        return IKM([
+            [btn('پاسخ', f'addtkreply:{tid}', BLUE, 'ticket_reply')],
+            [btn('بستن تیکت', f'addtkclose:{tid}', RED, 'ticket_close')],
+            [btn('بازگشت به تیکت‌ها', 'addtks', None, 'back')]
+        ])
+    return IKM([
+        [btn('پاسخ', f'addtkmsg:{tid}', BLUE, 'ticket_reply')],
+        [btn('بستن تیکت', f'addtkclose:{tid}', RED, 'ticket_close')]
+    ])
+
+async def added_support_menu(update, ctx):
+    await show(update, f"{E('support')} <b>پشتیبانی</b>\n\nیکی از گزینه‌ها را انتخاب کن:",
+               [row(btn('باز کردن تیکت', 'addtkopen', BLUE, 'ticket')),
+                row(btn('ارتباط مستقیم', url=S('support_url'), ek='direct'))] + back_home())
+
+async def added_ticket_open(update, ctx):
+    uid=update.effective_user.id; now=int(time.time())
+    t=q("SELECT * FROM support_tickets WHERE user_id=? AND status='open' ORDER BY id DESC LIMIT 1",(uid,),True)
+    if t: tid=t['id']; text=f'🎫 تیکت باز شما #{tid} است. پیام جدید را بفرست.'
+    else:
+        tid=ex('INSERT INTO support_tickets(user_id,created,updated) VALUES(?,?,?)',(uid,now,now)); added_audit(uid,'ticket_open',tid)
+        text=f'🎫 تیکت #{tid} ساخته شد. پیام یا مشکل خودت را بفرست.'
+    set_state(ctx,'addticket',tid)
+    if update.callback_query:
+        return await show(update, text, [row(btn('لغو','home',RED,'no'))])
+    return await update.message.reply_text(text, reply_markup=IKM([[btn('لغو','home',RED,'no')]]))
+
+def added_ticket_text(tid):
+    t=q('SELECT * FROM support_tickets WHERE id=?',(tid,),True)
+    if not t:return None
+    msgs=q('SELECT * FROM support_messages WHERE ticket_id=? ORDER BY id ASC LIMIT 100',(tid,))
+    lines=[f"🎫 <b>تیکت #{tid}</b> | کاربر <code>{t['user_id']}</code> | {t['status']}"]
+    for m in msgs:
+        who='کاربر' if m['sender_id']==t['user_id'] else f"ادمین {m['sender_id']}"
+        lines.append(f"\n<b>{who}:</b> {html.escape(m['body'] or '')}")
+    return '\n'.join(lines)
+
+async def added_tickets(update, ctx):
+    uid=update.effective_user.id
+    if not is_admin(uid): return
+    rows=q("SELECT * FROM support_tickets WHERE status='open' ORDER BY updated DESC LIMIT 30")
+    kb=[[btn(f"#{r['id']} | کاربر {r['user_id']}",f"addtk:{r['id']}",None,'ticket')] for r in rows]
+    await update.message.reply_text('🎫 تیکت‌های باز:' if rows else 'تیکت باز نداریم.',reply_markup=IKM(kb) if kb else None)
+
+async def added_ticket_callback(update,ctx):
+    cq=update.callback_query; uid=cq.from_user.id; d=cq.data
+    if d=='addtkopen': await cq.answer(); return await added_ticket_open(update,ctx)
+    if d=='addtks':
+        if not is_admin(uid): return await cq.answer('دسترسی ندارید',show_alert=True)
+        await cq.answer(); rows=q("SELECT * FROM support_tickets WHERE status='open' ORDER BY updated DESC LIMIT 30")
+        kb=[[btn(f"#{r['id']} | کاربر {r['user_id']}",f"addtk:{r['id']}",None,'ticket')] for r in rows]
+        return await cq.edit_message_text('🎫 تیکت‌های باز:' if rows else 'تیکت باز نداریم.',reply_markup=IKM(kb) if kb else None)
+    if d.startswith('addtk:'):
+        if not is_admin(uid): return await cq.answer('دسترسی ندارید',show_alert=True)
+        await cq.answer(); tid=int(d.split(':')[1]); return await cq.edit_message_text(added_ticket_text(tid) or 'تیکت پیدا نشد.',parse_mode=ParseMode.HTML,reply_markup=added_ticket_kb(tid,True))
+    if d.startswith('addtkmsg:'):
+        tid=int(d.split(':')[1]); t=q('SELECT * FROM support_tickets WHERE id=? AND user_id=? AND status="open"',(tid,uid),True)
+        if not t:return await cq.answer('تیکت پیدا نشد',show_alert=True)
+        set_state(ctx,'addticket',tid); await cq.answer(); return await cq.edit_message_text('پیامت را بفرست.')
+    if d.startswith('addtkreply:'):
+        if not is_admin(uid): return await cq.answer('دسترسی ندارید',show_alert=True)
+        tid=int(d.split(':')[1]); t=q('SELECT * FROM support_tickets WHERE id=? AND status="open"',(tid,),True)
+        if not t:return await cq.answer('تیکت پیدا نشد یا بسته است',show_alert=True)
+        set_state(ctx,'addticketreply',tid); await cq.answer()
+        return await cq.edit_message_text(
+            f'↩️ پاسخ تیکت #{tid} را بفرست:',
+            reply_markup=added_ticket_kb(tid,True)
+        )
+    if d.startswith('addtkclose:'):
+        tid=int(d.split(':')[1]); t=q('SELECT * FROM support_tickets WHERE id=?',(tid,),True)
+        if not t or (t['user_id']!=uid and not is_admin(uid)): return await cq.answer('دسترسی ندارید',show_alert=True)
+        ex('UPDATE support_tickets SET status="closed",updated=? WHERE id=?',(int(time.time()),tid)); added_audit(uid,'ticket_close',tid); clear_state(ctx); await cq.answer('تیکت بسته شد')
+        return await cq.edit_message_text(f'✅ تیکت #{tid} بسته شد.')
+
+async def added_ticket_message(update,ctx):
+    st=ctx.user_data.get('state') or []
+    if not st or st[0] not in ('addticket', 'addticketreply') or not update.message or not update.message.text:return
+    uid=update.effective_user.id; tid=int(st[1]); t=q('SELECT * FROM support_tickets WHERE id=? AND status="open"',(tid,),True)
+    if not t or (t['user_id']!=uid and not is_admin(uid)):return
+    body=update.message.text.strip()
+    if not body:return
+    ex('INSERT INTO support_messages(ticket_id,sender_id,body,created) VALUES(?,?,?,?)',(tid,uid,body,int(time.time())))
+    ex('UPDATE support_tickets SET updated=?,admin_id=? WHERE id=?',(int(time.time()),uid if is_admin(uid) else 0,tid)); added_audit(uid,'ticket_message',tid,body)
+    if is_admin(uid) and st[0] == 'addticketreply':
+        try: await ctx.bot.send_message(t['user_id'],f'📩 پاسخ تیکت #{tid}:\n{html.escape(body)}',parse_mode=ParseMode.HTML)
+        except Exception:pass
+        await update.message.reply_text('✅ پیام شما به کاربر ارسال شد.',reply_markup=added_ticket_kb(tid,True))
+        try:
+            await ctx.bot.send_message(
+                t['user_id'],
+                f'📩 <b>پاسخ پشتیبانی برای تیکت #{tid}</b>\n\n{html.escape(body)}',
+                parse_mode=ParseMode.HTML,
+                reply_markup=added_ticket_kb(tid,False)
+            )
+        except Exception:
+            pass
+    elif is_admin(uid):
+        try: await ctx.bot.send_message(t['user_id'],f'📩 پاسخ تیکت #{tid}:\n{html.escape(body)}',parse_mode=ParseMode.HTML)
+        except Exception:pass
+        await update.message.reply_text('✅ پاسخ ثبت و برای کاربر ارسال شد.',reply_markup=added_ticket_kb(tid,True))
+    else:
+        for a in ADMIN_IDS:
+            try: await ctx.bot.send_message(a,f'🎫 پیام جدید در تیکت #{tid} از کاربر {uid}:\n{html.escape(body)}',
+                                            parse_mode=ParseMode.HTML, reply_markup=added_ticket_kb(tid,True))
+            except Exception:pass
+        await update.message.reply_text('✅ پیام ثبت شد. منتظر پاسخ پشتیبانی باش.')
+    clear_state(ctx)
+
+async def added_backup(update,ctx):
+    if not is_admin(update.effective_user.id):return
+    stamp=dt.datetime.now().strftime('%Y%m%d_%H%M%S'); path=f'{DB_PATH}.backup_{stamp}'; CON.commit(); shutil.copy2(DB_PATH,path); added_audit(update.effective_user.id,'database_backup',path)
+    with open(path,'rb') as f: await update.message.reply_document(f,filename=path,caption='✅ بکاپ دیتابیس آماده شد.')
+
+async def added_report(update,ctx):
+    if not is_admin(update.effective_user.id):return
+    now=int(time.time()); day=now-86400
+    users=q('SELECT COUNT(*) c FROM users',one=True)['c']; active=q("SELECT COUNT(*) c FROM services WHERE status='active' AND expire>?",(now,),True)['c']; sales=q("SELECT COALESCE(SUM(price),0) s FROM services WHERE created>? AND status!='deleted'",(day,),True)['s']; topups=q("SELECT COALESCE(SUM(amount),0) s FROM payments WHERE created>? AND status='ok'",(day,),True)['s']; tickets=q("SELECT COUNT(*) c FROM support_tickets WHERE status='open'",one=True)['c']
+    added_audit(update.effective_user.id,'daily_report'); await update.message.reply_text(f'📊 گزارش ۲۴ ساعت اخیر\n\nکاربران: {users}\nسرویس فعال: {active}\nفروش: {money(sales)} تومان\nشارژ تأییدشده: {money(topups)} تومان\nتیکت باز: {tickets}')
+
+async def added_panel_integration_test(update, ctx):
+    """تست اتصال همه پنل‌های ثبت‌شده؛ فقط خواندنی و بدون ساخت/حذف سرویس."""
+    if not is_admin(update.effective_user.id):
+        return
+    panels = q("SELECT * FROM panels ORDER BY id")
+    if not panels:
+        return await update.message.reply_text("🔌 هیچ پنلی برای تست ثبت نشده است.")
+    out = ["🧪 <b>تست اتصال پنل‌ها</b>"]
+    for p in panels:
+        if not p["active"]:
+            out.append(f"⏸ {html.escape(p['name'])} ({p['ptype']}): غیرفعال")
+            continue
+        ok, msg = await panel_test(p)
+        clean = re.sub(r"<[^>]+>", "", msg or "")
+        out.append(f"{'✅' if ok else '❌'} {html.escape(p['name'])} ({p['ptype']}): {html.escape(clean)}")
+        added_audit(update.effective_user.id, "panel_integration_test", p["id"], f"ok={ok}")
+    await update.message.reply_text("\n".join(out), parse_mode=ParseMode.HTML)
+
 def main():
     init_db()
     init_db_extra()  # ➕ جدول‌های کد تخفیف / تراکنش / نام سرویس
+    import asyncio
+    asyncio.get_event_loop().run_until_complete(init_added_features())
     load_admins()  # ➕
     app = Application.builder().token(BOT_TOKEN).build()
     app.post_init = ip_server_start  # ➕ وب‌سرور اطلاعات IP
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("emoji", cmd_emoji))
+    app.add_handler(CommandHandler("ticket", added_ticket_open))
+    app.add_handler(CommandHandler("tickets", added_tickets))
+    app.add_handler(CommandHandler("backup", added_backup))
+    app.add_handler(CommandHandler("report", added_report))
+    app.add_handler(CommandHandler("paneltest", added_panel_integration_test))
+    app.add_handler(CallbackQueryHandler(added_ticket_callback, pattern=r"^addtk"))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, added_ticket_message), group=-1)
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(~filters.COMMAND, on_message))
     app.job_queue.run_repeating(job_followup, interval=300, first=30)
     log.info("bot started")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+# ═══════════════════════════════════════════════════════════════════════════════════════
+# ➕➕ افزودنی‌های نسخه جدید
+# این بلوک فقط «اضافه» شده است. هیچ خطی از کد قبلی حذف یا ویرایش نشده؛
+# قابلیت‌های جدید با پوشاندن (wrap) توابع قبلی اضافه می‌شوند و در آخر همان تابع قبلی صدا زده می‌شود.
+# ═══════════════════════════════════════════════════════════════════════════════════════
+import contextvars
+
+# ---------- ایموجی‌های دکمه‌های جدید (در پنل ایموجی پریمیوم نمایش داده می‌شوند) ----------
+EMOJI.update({
+    "profile": "🪪", "pending": "🧾", "audit": "📜", "backup": "💾", "autobackup": "⏱", "report": "📈",
+    "paneltest": "🧪", "maintenance": "🚧", "forcejoin": "📌", "gateway": "🏦", "groups": "👥", "bc2": "📣",
+    "mytickets": "🗂", "zarinpal": "💠", "crypto": "💎", "verify": "🔍", "files": "📎", "addgb": "📶",
+    "adddays": "📅", "manualsvc": "🛠", "msg": "✉️", "history": "📚", "newticket": "🆕",
+})
+
+# ---------- گروه رنگ دکمه‌های جدید (در پنل رنگ دکمه‌ها نمایش داده می‌شوند) ----------
+for _k, _n in {"nup": "دکمه‌های پروفایل کاربر (ادمین)", "nsv": "لیست سرویس‌های کاربر (ادمین)",
+               "nrc": "لیست رسیدهای در انتظار (ادمین)", "ngp": "لیست گروه‌های کاربری (ادمین)",
+               "nmk": "دکمه‌های ساخت سرویس دستی (ادمین)", "nmt": "لیست تیکت‌های من",
+               "nbc": "دکمه‌های پیام همگانی پیشرفته (ادمین)", "nzp": "دکمه‌های پرداخت آنلاین",
+               "ncr": "دکمه‌های پرداخت ارز دیجیتال"}.items():
+    if _k not in BTN_GROUPS and _n not in BTN_NAMES:
+        BTN_GROUPS[_k] = _n; BTN_NAMES.append(_n)
+
+# ---------- تنظیمات جدید ----------
+DEFAULT_SETTINGS.update({
+    "mnt_on": "0", "fj_on": "0", "fj_chat": "", "fj_url": "",
+    "zp_on": "0", "zp_merchant": "", "zp_sandbox": "0", "zp_callback": "",
+    "cr_on": "0", "cr_wallet": "", "cr_network": "USDT (TRC20)", "cr_rate": "",
+    "abk_on": "0", "abk_hours": "24", "abk_last": "0", "groups": "",
+})
+SETTING_TITLES.update({
+    "fj_chat": "آیدی کانال عضویت اجباری (مثل @channel یا -100...)",
+    "fj_url": "لینک عضویت کانال (اختیاری)",
+    "zp_merchant": "مرچنت کد زرین‌پال", "zp_callback": "آدرس بازگشت درگاه (اختیاری)",
+    "cr_wallet": "آدرس کیف پول ارز دیجیتال", "cr_network": "شبکه/ارز (مثل USDT TRC20)",
+    "cr_rate": "قیمت هر واحد ارز به تومان", "abk_hours": "فاصله بکاپ خودکار (ساعت)",
+})
+
+# ---------- متن‌های جدید (از ویرایش متن‌ها قابل تغییرند) ----------
+TEXTS.update({
+    "maintenance": ("حالت تعمیرات", "🚧 <b>ربات در حال بروزرسانی است</b>\n\nلطفاً کمی بعد دوباره سر بزنید. {E:bot}"),
+    "force_join": ("عضویت اجباری",
+        "{E:forcejoin} <b>عضویت در کانال</b>\n\nبرای استفاده از ربات، اول در کانال ما عضو شوید و بعد دکمه «عضو شدم» را بزنید."),
+    "zp_pay": ("پرداخت آنلاین",
+        "{E:zarinpal} <b>پرداخت آنلاین</b>\n<blockquote>مبلغ: <b>{PRICE}</b> تومان</blockquote>\n\n"
+        "۱. روی «پرداخت آنلاین» بزنید و پرداخت را انجام دهید.\n۲. بعد از پرداخت، «بررسی پرداخت» را بزنید."),
+    "crypto_pay": ("پرداخت ارز دیجیتال",
+        "{E:crypto} <b>پرداخت با ارز دیجیتال</b>\n<blockquote>مبلغ: <b>{PRICE}</b> تومان\n"
+        "معادل: <b>{AMOUNT}</b>\nشبکه: <b>{NETWORK}</b>\nآدرس کیف پول:\n<code>{WALLET}</code></blockquote>\n\n"
+        "بعد از واریز، <b>اسکرین‌شات تراکنش</b> را بفرستید (TXID را در کپشن بنویسید)."),
+    "my_tickets": ("تیکت‌های من", "{E:mytickets} <b>تیکت‌های من</b>\nروی هر تیکت بزن تا تاریخچه‌اش را ببینی."),
+})
+
+NX_PREFIXES_ADMIN = {"nx", "nup", "nsv", "nrc", "ngp", "nmk", "nbc"}
+NX_PREFIXES_USER = {"nmt", "nzp", "nzv", "ncr"}
+NX_STATES_ADMIN = {"nxprof", "nxbal", "nxmsg", "nxsvadd", "ngpadd", "ngpset", "nxbc"}
+NX_STATES_USER = {"nxcrypto"}
+_NX_FJ_CACHE = {}
+_NX_EXTRA = contextvars.ContextVar("nx_extra_rows", default=None)
+
+
+def nx_init_db():
+    CON.executescript("""
+    CREATE TABLE IF NOT EXISTS support_files(id INTEGER PRIMARY KEY AUTOINCREMENT, ticket_id INTEGER,
+        sender_id INTEGER, file_id TEXT, kind TEXT, caption TEXT, created INTEGER);
+    CREATE TABLE IF NOT EXISTS gw_payments(id INTEGER PRIMARY KEY AUTOINCREMENT, authority TEXT, user_id INTEGER,
+        amount INTEGER, bonus INTEGER DEFAULT 0, status TEXT DEFAULT 'pending', ref_id TEXT, created INTEGER);
+    """)
+    CON.commit()
+
+
+def nx_digits(t):
+    return (t or "").translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")).replace(",", "").strip()
+
+
+class _NxShim:
+    """برای صدا زدن دستورهای قبلی (/backup ، /report ، /paneltest) از روی دکمه."""
+    def __init__(self, update):
+        self.effective_user = update.effective_user
+        self.effective_chat = update.effective_chat
+        self.message = update.callback_query.message
+        self.callback_query = None
+
+
+# ---------- پوشاندن show: اضافه کردن ردیف دکمه جدید به صفحه‌های قبلی، قبل از دکمه بازگشت ----------
+_nx_orig_show = show
+async def show(update, text, kb=None):
+    extra = _NX_EXTRA.get()
+    if extra and kb is not None:
+        _NX_EXTRA.set(None)
+        kb = list(kb); pos = max(len(kb) - 1, 0); kb[pos:pos] = extra
+    return await _nx_orig_show(update, text, kb)
+
+
+def _nx_with_extra(fn, rows_fn):
+    async def wrapper(*a, **k):
+        try: rows = rows_fn(*a, **k)
+        except Exception as e: log.warning("nx extra rows: %s", e); rows = None
+        tok = _NX_EXTRA.set(rows or None)
+        try: return await fn(*a, **k)
+        finally: _NX_EXTRA.reset(tok)
+    wrapper.__name__ = getattr(fn, "__name__", "wrapper")
+    return wrapper
+
+
+def _nx_support_rows(update, ctx):
+    return [row(btn("تیکت‌های من", "nmt:list", BLUE, "mytickets"))]
+
+
+def _nx_receipt_rows(update, ctx, amount, gift):
+    g = 1 if gift else 0; rows = []
+    if S("zp_on") == "1" and S("zp_merchant"):
+        rows.append(row(btn("پرداخت آنلاین (زرین‌پال)", f"nzp:{amount}:{g}", GREEN, "zarinpal")))
+    if S("cr_on") == "1" and S("cr_wallet"):
+        rows.append(row(btn("پرداخت با ارز دیجیتال", f"ncr:{amount}:{g}", BLUE, "crypto")))
+    return rows
+
+
+added_support_menu = _nx_with_extra(added_support_menu, _nx_support_rows)
+ask_receipt = _nx_with_extra(ask_receipt, _nx_receipt_rows)
+
+
+# ---------- منوی ادمین: دکمه‌های جدید قبل از «بازگشت» ----------
+_nx_orig_admin_kb = admin_kb
+def admin_kb():
+    kb = _nx_orig_admin_kb()
+    extra = [
+        row(btn("پروفایل کاربر", "nx:prof", BLUE, "profile"), btn("رسیدهای در انتظار", "nx:pend", GREEN, "pending")),
+        row(btn("تیکت‌های پشتیبانی", "addtks", BLUE, "ticket"), btn("لاگ ادمین‌ها", "nx:audit", None, "audit")),
+        row(btn("بکاپ دیتابیس", "nx:bk", None, "backup"), btn("بکاپ خودکار", "nx:abk", None, "autobackup")),
+        row(btn("گزارش ۲۴ ساعته", "nx:rep", None, "report"), btn("تست اتصال پنل‌ها", "nx:ptest", None, "paneltest")),
+        row(btn("حالت تعمیرات", "nx:mnt", None, "maintenance"), btn("عضویت اجباری", "nx:fj", None, "forcejoin")),
+        row(btn("درگاه و ارز دیجیتال", "nx:gw", None, "gateway"), btn("گروه‌های کاربری", "nx:grp", None, "groups")),
+        row(btn("پیام همگانی پیشرفته", "nx:bc", BLUE, "bc2")),
+    ]
+    return kb[:-1] + extra + kb[-1:]
+
+
+# ---------- تخفیف گروه کاربری (روی قیمت بعد از کد تخفیف اعمال می‌شود) ----------
+def nx_groups():
+    return [g for g in (S("groups") or "").split("|") if g]
+
+def nx_group_pct(g):
+    try: return max(0, min(100, int(S("grp_pct:" + (g or "عادی")) or 0)))
+    except Exception: return 0
+
+_nx_orig_dc_price = dc_price
+def dc_price(uid, price):
+    final, line, code = _nx_orig_dc_price(uid, price)
+    try:
+        u = get_user(uid); g = (u["grp"] if u else None) or "عادی"; pct = nx_group_pct(g)
+        if pct and final > 0:
+            off = final * pct // 100; final = final - off
+            line += (f"\n\n<blockquote>{E('groups')} تخفیف گروه <b>{html.escape(g)}</b>: <b>{pct}%</b> ({money(off)} تومان)\n"
+                     f"{E('ok')} مبلغ نهایی: <b>{money(final)}</b> تومان</blockquote>")
+    except Exception as e:
+        log.warning("group price: %s", e)
+    return final, line, code
+
+
+# ---------- فایل/عکس در تیکت ----------
+def _nx_ticket_files(tid):
+    return q("SELECT * FROM support_files WHERE ticket_id=? ORDER BY id", (tid,))
+
+_nx_orig_ticket_kb = added_ticket_kb
+def added_ticket_kb(tid, admin=False):
+    kb = _nx_orig_ticket_kb(tid, admin)
+    try:
+        if _nx_ticket_files(tid):
+            rows = [list(r) for r in kb.inline_keyboard]
+            rows.insert(len(rows) - 1 if admin else len(rows), [btn("فایل‌های تیکت", f"nmt:f:{tid}", None, "files")])
+            return IKM(rows)
+    except Exception as e:
+        log.warning("ticket kb: %s", e)
+    return kb
+
+
+async def nx_ticket_file(update, ctx, uid, st):
+    m = update.effective_message; tid = int(st[1])
+    t = q("SELECT * FROM support_tickets WHERE id=? AND status='open'", (tid,), True)
+    if not t or (t["user_id"] != uid and not is_admin(uid)): clear_state(ctx); return await m.reply_text("تیکت پیدا نشد یا بسته است.")
+    if m.photo: fid, kind = m.photo[-1].file_id, "photo"
+    else: fid, kind = m.document.file_id, "document"
+    cap = (m.caption or "").strip(); now = int(time.time())
+    ex("INSERT INTO support_files(ticket_id,sender_id,file_id,kind,caption,created) VALUES(?,?,?,?,?,?)", (tid, uid, fid, kind, cap, now))
+    ex("INSERT INTO support_messages(ticket_id,sender_id,body,created) VALUES(?,?,?,?)",
+       (tid, uid, ("📷 [عکس] " if kind == "photo" else "📎 [فایل] ") + cap, now))
+    ex("UPDATE support_tickets SET updated=? WHERE id=?", (now, tid)); added_audit(uid, "ticket_file", tid, kind)
+    send = (lambda chat, **k: ctx.bot.send_photo(chat, fid, **k)) if kind == "photo" else (lambda chat, **k: ctx.bot.send_document(chat, fid, **k))
+    if is_admin(uid) and t["user_id"] != uid:
+        try: await send(t["user_id"], caption=f"📩 پاسخ پشتیبانی برای تیکت #{tid}\n{cap}"[:1000], reply_markup=added_ticket_kb(tid, False))
+        except Exception as e: log.warning("ticket file to user: %s", e)
+        await m.reply_text("✅ فایل برای کاربر ارسال شد.", reply_markup=added_ticket_kb(tid, True))
+    else:
+        for a in ADMIN_IDS:
+            try: await send(a, caption=f"🎫 فایل جدید در تیکت #{tid} از کاربر {uid}\n{cap}"[:1000], reply_markup=added_ticket_kb(tid, True))
+            except Exception: pass
+        await m.reply_text("✅ فایل ثبت شد. منتظر پاسخ پشتیبانی باش.")
+    clear_state(ctx)
+
+
+async def nx_my_tickets(update, uid):
+    rows = q("SELECT * FROM support_tickets WHERE user_id=? ORDER BY id DESC LIMIT 20", (uid,))
+    kb = [row(btn(f"{'🟢' if r['status'] == 'open' else '🔒'} #{r['id']} | {jdate(r['created'])}", f"nmt:v:{r['id']}")) for r in rows]
+    kb += [row(btn("باز کردن تیکت", "addtkopen", BLUE, "newticket")), row(btn("بازگشت", "supportmenu", RED, "back"))]
+    await show(update, render("my_tickets") + ("" if rows else "\n\nهنوز تیکتی نداری."), kb)
+
+
+async def nx_my_ticket_view(update, uid, tid):
+    t = q("SELECT * FROM support_tickets WHERE id=?", (tid,), True)
+    if not t or (t["user_id"] != uid and not is_admin(uid)): return await nx_my_tickets(update, uid)
+    text = added_ticket_text(tid) or "تیکت پیدا نشد."
+    if len(text) > 3900: text = text[:3900] + "\n…"
+    kb = [list(r) for r in added_ticket_kb(tid, False).inline_keyboard] if t["status"] == "open" else []
+    if t["status"] != "open" and _nx_ticket_files(tid): kb.append([btn("فایل‌های تیکت", f"nmt:f:{tid}", None, "files")])
+    kb += [row(btn("بازگشت", "nmt:list", RED, "back"))]
+    await show(update, text, kb)
+
+
+# ---------- عضویت اجباری و حالت تعمیرات ----------
+def nx_maint_block(uid):
+    return S("mnt_on") == "1" and not is_admin(uid)
+
+def _nx_plain(t):
+    return re.sub(r"<[^>]+>", "", t or "")[:190]
+
+async def nx_fj_ok(bot, uid):
+    chat = (S("fj_chat") or "").strip()
+    if S("fj_on") != "1" or not chat or is_admin(uid): return True
+    if time.time() - _NX_FJ_CACHE.get(uid, 0) < 60: return True
+    try:
+        mem = await bot.get_chat_member(chat, uid)
+        ok = mem.status in ("member", "administrator", "creator", "owner") or (mem.status == "restricted" and getattr(mem, "is_member", False))
+    except Exception as e:
+        log.warning("force join check (ربات باید ادمین کانال باشد): %s", e); return True
+    if ok: _NX_FJ_CACHE[uid] = time.time()
+    return ok
+
+def nx_fj_kb():
+    chat = (S("fj_chat") or "").strip()
+    link = S("fj_url") or (f"https://t.me/{chat[1:]}" if chat.startswith("@") else S("channel_url"))
+    return [row(btn("عضویت در کانال", url=link, ek="channel")), row(btn("عضو شدم", "nfj:check", GREEN, "ok"))]
+
+
+_nx_orig_cmd_start = cmd_start
+async def cmd_start(update, ctx):
+    uid = update.effective_user.id
+    ref = None
+    if ctx.args and ctx.args[0].startswith("ref_") and ctx.args[0][4:].isdigit(): ref = int(ctx.args[0][4:])
+    u = touch(update.effective_user, ref)  # ثبت معرف حتی اگر کاربر هنوز عضو کانال نشده باشد
+    if u["banned"]: return await _nx_orig_cmd_start(update, ctx)
+    if nx_maint_block(uid):
+        return await update.message.reply_text(render("maintenance"), parse_mode=ParseMode.HTML)
+    if not await nx_fj_ok(ctx.bot, uid):
+        clear_state(ctx)
+        return await update.message.reply_text(render("force_join"), parse_mode=ParseMode.HTML, reply_markup=IKM(nx_fj_kb()))
+    return await _nx_orig_cmd_start(update, ctx)
+
+
+# ---------- پروفایل کاربر (ادمین) ----------
+async def nx_profile(update, tid):
+    u = get_user(tid)
+    if not u: return await show(update, "کاربر پیدا نشد.", admin_back())
+    now = int(time.time())
+    act = q("SELECT COUNT(*) c FROM services WHERE user_id=? AND status='active' AND expire>?", (tid, now), True)["c"]
+    tot = q("SELECT COUNT(*) c FROM services WHERE user_id=? AND status!='deleted'", (tid,), True)["c"]
+    paid = q("SELECT COALESCE(SUM(amount),0) s FROM payments WHERE user_id=? AND status='ok'", (tid,), True)["s"]
+    spent = q("SELECT COALESCE(SUM(amount),0) s FROM txlog WHERE user_id=?", (tid,), True)["s"]
+    refs = q("SELECT COUNT(*) c FROM users WHERE ref_by=?", (tid,), True)["c"]
+    pend = q("SELECT COUNT(*) c FROM payments WHERE user_id=? AND status='pending'", (tid,), True)["c"]
+    tks = q("SELECT COUNT(*) c FROM support_tickets WHERE user_id=?", (tid,), True)["c"]
+    g = u["grp"] or "عادی"
+    t = (f"{E('profile')} <b>پروفایل کاربر</b>\n<blockquote>🆔 آیدی: <code>{tid}</code>\n"
+         f"👤 نام: <b>{html.escape(u['name'] or '-')}</b>\n🔗 یوزرنیم: {('@' + html.escape(u['username'])) if u['username'] else '-'}\n"
+         f"{E('phone')} شماره: {html.escape(u['phone'] or 'ثبت نشده')}\n👥 گروه: <b>{html.escape(g)}</b> ({nx_group_pct(g)}% تخفیف)\n"
+         f"🚦 وضعیت: <b>{'🚫 مسدود' if u['banned'] else '✅ فعال'}</b>\n🕒 عضویت: {jdate(u['created'])}\n"
+         f"👀 آخرین بازدید: {jdate(u['last_seen'])}</blockquote>\n"
+         f"<blockquote>{E('wallet')} موجودی: <b>{money(u['balance'])}</b> تومان\n"
+         f"{E('plan')} سرویس فعال: <b>{act}</b> از <b>{tot}</b>\n💳 شارژ تأییدشده: <b>{money(paid)}</b> تومان\n"
+         f"🛒 خرید/تمدید: <b>{money(spent)}</b> تومان\n🧾 رسید در انتظار: <b>{pend}</b>\n"
+         f"{E('ref')} زیرمجموعه: <b>{refs}</b> | معرف: <code>{u['ref_by'] or '-'}</code>\n🎫 تیکت‌ها: <b>{tks}</b></blockquote>")
+    kb = [row(btn("افزایش موجودی کاربر", f"nup:add:{tid}", GREEN, "addbal"), btn("کسر موجودی کاربر", f"nup:sub:{tid}", RED, "subbal")),
+          row(btn("آن‌بن کاربر", f"nup:ban:{tid}", GREEN, "unban") if u["banned"] else btn("بن کاربر", f"nup:ban:{tid}", RED, "ban")),
+          row(btn("سرویس‌های کاربر", f"nup:svc:{tid}", BLUE, "subs"), btn("ساخت سرویس دستی", f"nup:mk:{tid}", GREEN, "manualsvc")),
+          row(btn("تراکنش‌های کاربر", f"nup:trx:{tid}", None, "trx"), btn("تغییر گروه کاربر", f"nup:grp:{tid}", None, "groups")),
+          row(btn("ارسال پیام به کاربر", f"nup:msg:{tid}", None, "msg"), btn("تیکت‌های کاربر", f"nup:tk:{tid}", None, "ticket")),
+          row(btn("بروزرسانی پروفایل", f"nup:v:{tid}", None, "search"))] + admin_back()
+    await show(update, t, kb)
+
+
+async def nx_user_services(update, tid):
+    rows = q("SELECT * FROM services WHERE user_id=? AND status!='deleted' ORDER BY id DESC LIMIT 30", (tid,))
+    now = time.time()
+    kb = [row(btn(f"{'🟢' if s['status'] == 'active' and s['expire'] > now else ('⏳' if s['status'] == 'pending' else '🔴')} "
+                  f"{(s['title'] if 'title' in s.keys() and s['title'] else s['username'])} | {s['gb']}GB", f"nsv:v:{s['id']}")) for s in rows]
+    kb += [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))]
+    await show(update, f"{E('subs')} <b>سرویس‌های کاربر</b> <code>{tid}</code>" + ("" if rows else "\n\nسرویسی ندارد."), kb)
+
+
+async def nx_service_view(update, sid):
+    s = q("SELECT * FROM services WHERE id=?", (sid,), True)
+    if not s: return await show(update, "سرویس پیدا نشد.", admin_back())
+    pn = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True)
+    t = (f"{E('plan')} <b>{svc_name(s)}</b>\n<blockquote>👤 کاربر: <code>{s['user_id']}</code>\n"
+         f"📍 پنل: {html.escape(pn['name'] if pn else '-')}\n{E('volume')} حجم: {s['gb']} گیگ\n"
+         f"{E('time')} انقضا: {jdate(s['expire'])}\n🚦 وضعیت: {s['status']}{' (تست)' if s['is_test'] else ''}\n"
+         f"{E('price')} مبلغ: {money(s['price'] or 0)} تومان</blockquote>\n"
+         f"{E('link')} <code>{html.escape((s['sub'] or s['link'] or '-')[:900])}</code>")
+    kb = [row(btn("افزایش حجم", f"nsv:gb:{sid}", GREEN, "addgb"), btn("افزایش روز", f"nsv:dy:{sid}", GREEN, "adddays")),
+          row(btn("بازگشت به سرویس‌ها", f"nup:svc:{s['user_id']}", RED, "back"))]
+    await show(update, t, kb)
+
+
+async def panel_edit(p, username, gb, exp):
+    """ویرایش حجم/انقضا روی پنل بدون ریست مصرف (برخلاف تمدید)."""
+    t = p["ptype"]; limit = int(float(gb) * 1024 ** 3); exp = int(exp)
+    async with _http(p) as c:
+        if t in ("marzban", "pasarguard"):
+            h = await _token(c, p)
+            body = {"expire": exp, "data_limit": limit, "status": "active"}
+            r = await c.put(f"/api/user/{username}", json=body, headers=h)
+            if t == "pasarguard" and r.status_code == 422:
+                body["expire"] = dt.datetime.fromtimestamp(exp, dt.timezone.utc).isoformat()
+                r = await c.put(f"/api/user/{username}", json=body, headers=h)
+            if r.status_code >= 400: raise Exception(f"HTTP {r.status_code}: {r.text[:300]}")
+        elif t == "marzneshin":
+            h = await _token(c, p)
+            body = {"username": username, "expire_strategy": "fixed_date", "data_limit": limit,
+                    "expire_date": dt.datetime.fromtimestamp(exp, dt.timezone.utc).isoformat()}
+            r = await c.put(f"/api/users/{username}", json=body, headers=h)
+            if r.status_code >= 400: raise Exception(f"HTTP {r.status_code}: {r.text[:300]}")
+        elif t in XUI_PREFIX:
+            await _xlogin(c, p)
+            inb, inbound, client = await _xui_find(c, t, p, username)
+            if not client: raise Exception("کلاینت روی پنل پیدا نشد")
+            client.update({"totalGB": limit, "expiryTime": exp * 1000, "enable": True})
+            r = await c.post(f"{XUI_PREFIX[t]}/updateClient/{_xui_cid(inbound, client)}",
+                             data={"id": inb, "settings": json.dumps({"clients": [client]})})
+            j = r.json()
+            if not j.get("success"): raise Exception(j.get("msg") or "updateClient failed")
+        else:
+            raise Exception("نوع پنل پشتیبانی نمی‌شود")
+
+
+async def nx_service_add(update, ctx, uid, sid, kind, val):
+    s = q("SELECT * FROM services WHERE id=?", (sid,), True)
+    if not s: return await update.effective_message.reply_text("سرویس پیدا نشد.")
+    pn = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True)
+    gb = float(s["gb"] or 0) + (val if kind == "gb" else 0)
+    exp = int(max(time.time(), s["expire"] or 0) + val * 86400) if kind == "dy" else int(s["expire"] or time.time())
+    gb_db = int(gb) if float(gb).is_integer() else gb
+    try:
+        if pn and pn["ptype"] != "manual" and s["status"] != "pending":
+            await panel_edit(pn, s["username"], gb, exp)
+    except Exception as e:
+        log.exception("panel edit")
+        return await update.effective_message.reply_text(f"❌ خطای پنل: {html.escape(str(e))[:400]}", parse_mode=ParseMode.HTML,
+                                                         reply_markup=IKM([row(btn("بازگشت به سرویس", f"nsv:v:{sid}", RED, "back"))]))
+    ex("UPDATE services SET gb=?, expire=?, status=CASE WHEN status='expired' THEN 'active' ELSE status END, mid_sent=0 WHERE id=?",
+       (gb_db, exp, sid))
+    added_audit(uid, "service_add_" + kind, sid, val)
+    try: await ctx.bot.send_message(s["user_id"], f"🎁 به سرویس <code>{html.escape(s['username'])}</code> "
+                                    f"{('%s گیگ حجم' % val) if kind == 'gb' else ('%s روز' % val)} اضافه شد.", parse_mode=ParseMode.HTML)
+    except Exception: pass
+    await update.effective_message.reply_text("✅ انجام شد.", reply_markup=IKM([row(btn("بازگشت به سرویس", f"nsv:v:{sid}", BLUE, "back"))]))
+
+
+async def nx_user_trx(update, tid):
+    lines = [f"{E('trx')} <b>تراکنش‌های کاربر</b> <code>{tid}</code>"]
+    tx = q("SELECT * FROM txlog WHERE user_id=? ORDER BY id DESC LIMIT 15", (tid,))
+    if tx:
+        lines.append("\n🛒 <b>خرید/تمدید</b><blockquote>" + "\n".join(
+            f"{jdate(r['created'])} | {r['kind']} | {money(r['amount'])} تومان" + (f" | کد {html.escape(r['code'])}" if r['code'] else "")
+            for r in tx) + "</blockquote>")
+    pays = q("SELECT * FROM payments WHERE user_id=? ORDER BY id DESC LIMIT 15", (tid,))
+    if pays:
+        st = {"ok": "✅", "pending": "⏳", "rejected": "❌"}
+        lines.append("\n💳 <b>شارژها</b><blockquote>" + "\n".join(
+            f"{st.get(r['status'], r['status'])} #{r['id']} | {jdate(r['created'])} | {money(r['amount'])}" + (f" + {money(r['bonus'])}" if r['bonus'] else "")
+            for r in pays) + "</blockquote>")
+    if len(lines) == 1: lines.append("\nتراکنشی ثبت نشده.")
+    await show(update, "\n".join(lines)[:4000], [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+
+
+# ---------- گروه‌های کاربری ----------
+async def nx_groups_page(update):
+    gs = ["عادی"] + nx_groups()
+    kb = [row(btn(f"{g} | {nx_group_pct(g)}% | {q('SELECT COUNT(*) c FROM users WHERE grp=?', (g,), True)['c']} نفر", f"ngp:e:{i - 1}"))
+          for i, g in enumerate(gs)]
+    kb += [row(btn("افزودن گروه", "ngp:add", GREEN, "addbal"))] + admin_back()
+    await show(update, f"{E('groups')} <b>گروه‌های کاربری</b>\nهر گروه درصد تخفیف خودش را روی خرید و تمدید دارد.\n"
+                       "گروه هر کاربر از «پروفایل کاربر» تغییر می‌کند.", kb)
+
+def _nx_group_by_idx(i):
+    i = int(i)
+    if i < 0: return "عادی"
+    gs = nx_groups(); return gs[i] if i < len(gs) else None
+
+
+# ---------- پرداخت آنلاین زرین‌پال ----------
+def _nx_zp_base():
+    return "https://sandbox.zarinpal.com" if S("zp_sandbox") == "1" else "https://payment.zarinpal.com"
+
+async def nx_zp_request(amount_toman, uid, callback):
+    body = {"merchant_id": S("zp_merchant"), "amount": int(amount_toman) * 10, "callback_url": callback,
+            "description": f"شارژ کیف پول {uid}"}
+    async with httpx.AsyncClient(timeout=20) as c:
+        r = await c.post(_nx_zp_base() + "/pg/v4/payment/request.json", json=body)
+    j = r.json(); d = j.get("data") or {}
+    if isinstance(d, dict) and d.get("code") == 100 and d.get("authority"):
+        return d["authority"], f"{_nx_zp_base()}/pg/StartPay/{d['authority']}"
+    raise Exception(str(j.get("errors") or j)[:300])
+
+async def nx_zp_verify(amount_toman, authority):
+    body = {"merchant_id": S("zp_merchant"), "amount": int(amount_toman) * 10, "authority": authority}
+    async with httpx.AsyncClient(timeout=20) as c:
+        r = await c.post(_nx_zp_base() + "/pg/v4/payment/verify.json", json=body)
+    j = r.json(); d = j.get("data") or {}
+    if isinstance(d, dict) and d.get("code") in (100, 101): return True, str(d.get("ref_id") or "")
+    return False, str(j.get("errors") or d)[:300]
+
+async def nx_ref_share(ctx, payer_id, amount):
+    payer = get_user(payer_id)
+    if not payer or not payer["ref_by"]: return
+    try: share = int(amount) * int(S("ref_percent") or 0) // 100
+    except Exception: share = 0
+    if share:
+        ex("UPDATE users SET balance=balance+? WHERE id=?", (share, payer["ref_by"]))
+        try: await ctx.bot.send_message(payer["ref_by"], f"🤝 {money(share)} تومان پاداش زیرمجموعه گرفتی!")
+        except Exception: pass
+
+
+# ---------- پیام همگانی پیشرفته ----------
+async def nx_broadcast(update, ctx, uid, mode, target):
+    m = update.effective_message; now = int(time.time())
+    if target == "act":
+        ids = [r["user_id"] for r in q("SELECT DISTINCT user_id FROM services WHERE status='active' AND expire>?", (now,))]
+        banned = {r["id"] for r in q("SELECT id FROM users WHERE banned=1")}; ids = [i for i in ids if i not in banned]
+    else:
+        ids = [r["id"] for r in q("SELECT id FROM users WHERE banned=0")]
+    prog = await m.reply_text(f"⏳ در حال ارسال برای {len(ids)} نفر...")
+    ok = blocked = fail = 0
+    for n, cid in enumerate(ids, 1):
+        try:
+            if mode == "fwd": await m.forward(cid)
+            else: await m.copy(cid)
+            ok += 1
+        except Exception as e:
+            s = (type(e).__name__ + " " + str(e)).lower()
+            if "forbidden" in s or "blocked" in s or "deactivated" in s: blocked += 1
+            else: fail += 1
+        if n % 50 == 0:
+            try: await prog.edit_text(f"⏳ {n} از {len(ids)} | موفق {ok} | بلاک {blocked} | خطا {fail}")
+            except Exception: pass
+        await asyncio.sleep(0.04)
+    added_audit(uid, "broadcast_" + mode, target, f"ok={ok} blocked={blocked} fail={fail}")
+    return await m.reply_text(f"📣 <b>گزارش پیام همگانی</b>\n<blockquote>کل: {len(ids)}\n✅ موفق: {ok}\n"
+                              f"🚫 ربات را بلاک کرده‌اند: {blocked}\n⚠️ خطا: {fail}</blockquote>",
+                              parse_mode=ParseMode.HTML, reply_markup=IKM(admin_kb()))
+
+
+# ---------- بکاپ خودکار (داخل همان کار زمان‌بندی‌شده قبلی) ----------
+async def nx_auto_backup(ctx):
+    if S("abk_on") != "1": return
+    try: hours = max(1, int(nx_digits(S("abk_hours")) or 24))
+    except Exception: hours = 24
+    now = int(time.time())
+    try: last = int(S("abk_last") or 0)
+    except Exception: last = 0
+    if now - last < hours * 3600: return
+    set_S("abk_last", now)
+    try:
+        stamp = dt.datetime.now().strftime('%Y%m%d_%H%M%S'); path = f"{DB_PATH}.auto_{stamp}"
+        CON.commit(); shutil.copy2(DB_PATH, path); added_audit(0, "auto_backup", path)
+        for a in {MAIN_ADMIN_ID} | set(ENV_ADMIN_IDS):
+            try:
+                with open(path, "rb") as f:
+                    await ctx.bot.send_document(a, f, filename=os.path.basename(path), caption="💾 بکاپ خودکار دیتابیس")
+            except Exception as e: log.warning("auto backup send %s: %s", a, e)
+    except Exception as e:
+        log.warning("auto backup: %s", e)
+
+_nx_orig_job_followup = job_followup
+async def job_followup(ctx):
+    try: await _nx_orig_job_followup(ctx)
+    finally: await nx_auto_backup(ctx)
+
+
+# ---------- مسیریابی دکمه‌های جدید ----------
+async def nx_callback(update, ctx, uid, d):
+    cq = update.callback_query; p = d.split(":")
+    # ---- کاربر ----
+    if p[0] == "nmt":
+        if p[1] == "list": return await nx_my_tickets(update, uid)
+        if p[1] == "v": return await nx_my_ticket_view(update, uid, int(p[2]))
+        if p[1] == "f":
+            tid = int(p[2]); t = q("SELECT * FROM support_tickets WHERE id=?", (tid,), True)
+            if not t or (t["user_id"] != uid and not is_admin(uid)): return
+            for f in _nx_ticket_files(tid)[:20]:
+                cap = f"#{tid} | {'کاربر' if f['sender_id'] == t['user_id'] else 'پشتیبانی'} | {f['caption'] or ''}"[:1000]
+                try:
+                    if f["kind"] == "photo": await ctx.bot.send_photo(uid, f["file_id"], caption=cap)
+                    else: await ctx.bot.send_document(uid, f["file_id"], caption=cap)
+                except Exception as e: log.warning("ticket file: %s", e)
+            return
+    if p[0] == "nzp":
+        if S("zp_on") != "1" or not S("zp_merchant"): return await show(update, "درگاه فعلاً غیرفعال است.", back_home())
+        amount, gift = int(p[1]), p[2] == "1"
+        bonus = amount * int(S("gift_percent")) // 100 if gift and amount >= int(S("gift_min")) else 0
+        cb = S("zp_callback") or f"https://t.me/{getattr(ctx.bot, 'username', '') or BOT_REF.get('username') or ''}"
+        try: auth, link = await nx_zp_request(amount, uid, cb)
+        except Exception as e:
+            log.warning("zarinpal request: %s", e)
+            return await show(update, "❌ اتصال به درگاه ممکن نشد. از کارت به کارت استفاده کنید یا بعداً امتحان کنید.", back_home())
+        gid = ex("INSERT INTO gw_payments(authority,user_id,amount,bonus,created) VALUES(?,?,?,?,?)", (auth, uid, amount, bonus, int(time.time())))
+        clear_state(ctx)
+        return await show(update, render("zp_pay", PRICE=money(amount)),
+                          [row(btn("پرداخت آنلاین", url=link, ek="zarinpal")),
+                           row(btn("بررسی پرداخت", f"nzv:{gid}", GREEN, "verify")), row(btn("انصراف", "account", RED, "no"))])
+    if p[0] == "nzv":
+        g = q("SELECT * FROM gw_payments WHERE id=? AND user_id=?", (int(p[1]), uid), True)
+        if not g: return
+        if g["status"] != "pending": return await cq.answer("این پرداخت قبلاً بررسی شده.", show_alert=True)
+        ok, info = await nx_zp_verify(g["amount"], g["authority"])
+        if not ok: return await cq.answer("پرداخت هنوز تأیید نشده. اگر پرداخت کردی چند لحظه بعد دوباره بزن.", show_alert=True)
+        cur = CON.execute("UPDATE gw_payments SET status='ok', ref_id=? WHERE id=? AND status='pending'", (info, g["id"])); CON.commit()
+        if cur.rowcount != 1: return
+        total = g["amount"] + g["bonus"]
+        ex("UPDATE users SET balance=balance+? WHERE id=?", (total, uid))
+        pid = ex("INSERT INTO payments(user_id,amount,bonus,photo,status,created) VALUES(?,?,?,?,?,?)",
+                 (uid, g["amount"], g["bonus"], f"zarinpal:{info}", "ok", int(time.time())))
+        await nx_ref_share(ctx, uid, g["amount"]); added_audit(uid, "zarinpal_ok", pid, info)
+        for a in ADMIN_IDS:
+            try: await ctx.bot.send_message(a, f"💠 پرداخت آنلاین #{pid}\nکاربر: {uid}\nمبلغ: {money(g['amount'])} تومان\nکد پیگیری: {info}")
+            except Exception: pass
+        return await show(update, f"✅ پرداخت تأیید شد و {money(total)} تومان به کیف پولت اضافه شد.\nکد پیگیری: <code>{html.escape(info)}</code>", back_home())
+    if p[0] == "ncr":
+        if S("cr_on") != "1" or not S("cr_wallet"): return await show(update, "پرداخت ارز دیجیتال فعلاً غیرفعال است.", back_home())
+        amount, gift = int(p[1]), p[2] == "1"
+        try: rate = float(nx_digits(S("cr_rate")) or 0)
+        except Exception: rate = 0
+        amt = f"{amount / rate:.2f} {html.escape(S('cr_network').split()[0])}" if rate > 0 else "از پشتیبانی بپرسید"
+        set_state(ctx, "nxcrypto", amount, gift)
+        return await show(update, render("crypto_pay", PRICE=money(amount), AMOUNT=amt, NETWORK=html.escape(S("cr_network")),
+                                         WALLET=html.escape(S("cr_wallet"))), [row(btn("انصراف", "account", RED, "no"))])
+    if not is_admin(uid): return
+    # ---- ادمین ----
+    if d == "nx:prof":
+        set_state(ctx, "nxprof"); return await show(update, "آیدی عددی یا یوزرنیم کاربر را بفرست:", admin_back())
+    if d == "nx:pend":
+        rows = q("SELECT * FROM payments WHERE status='pending' ORDER BY id DESC LIMIT 40")
+        kb = [row(btn(f"#{r['id']} | {r['user_id']} | {money(r['amount'])}", f"nrc:{r['id']}")) for r in rows]
+        return await show(update, f"{E('pending')} <b>رسیدهای در انتظار</b> ({len(rows)})\nروی هر رسید بزن تا عکس و دکمه تأیید/رد بیاید."
+                          if rows else "✅ رسید در انتظاری نداریم.", kb + admin_back())
+    if p[0] == "nrc":
+        r = q("SELECT * FROM payments WHERE id=?", (int(p[1]),), True)
+        if not r or r["status"] != "pending": return await cq.answer("قبلاً بررسی شده.", show_alert=True)
+        u = get_user(r["user_id"])
+        cap = (f"🧾 رسید #{r['id']}\nکاربر: <code>{r['user_id']}</code> ({html.escape((u['name'] if u else '') or '')})\n"
+               f"مبلغ: {money(r['amount'])}{(' + هدیه ' + money(r['bonus'])) if r['bonus'] else ''} تومان\n🕒 {jdate(r['created'])}")
+        kb = IKM([row(btn("تأیید", f"pa:{r['id']}", GREEN, "ok"), btn("رد", f"pr:{r['id']}", RED, "no"))])
+        try: return await ctx.bot.send_photo(uid, r["photo"], caption=cap, parse_mode=ParseMode.HTML, reply_markup=kb)
+        except Exception as e: return await cq.message.reply_text(f"عکس رسید باز نشد: {e}")
+    if d == "nx:audit":
+        rows = q("SELECT * FROM audit_log ORDER BY id DESC LIMIT 30")
+        t = "\n".join(f"{jdate(r['created'])} | <code>{r['actor_id']}</code> | {html.escape(r['action'])} {html.escape(str(r['target'] or ''))[:30]}" for r in rows)
+        return await show(update, f"{E('audit')} <b>لاگ ادمین‌ها (۳۰ مورد آخر)</b>\n<blockquote>{t or 'خالی'}</blockquote>"[:4000], admin_back())
+    if d == "nx:bk": return await added_backup(_NxShim(update), ctx)
+    if d == "nx:rep": return await added_report(_NxShim(update), ctx)
+    if d == "nx:ptest":
+        await cq.message.reply_text("⏳ در حال تست اتصال پنل‌ها..."); return await added_panel_integration_test(_NxShim(update), ctx)
+    if d == "nx:abk":
+        return await show(update, f"{E('autobackup')} <b>بکاپ خودکار</b>\nفایل دیتابیس هر چند ساعت یک‌بار برای ادمین اصلی فرستاده می‌شود.\n"
+                                  f"آخرین بکاپ: {jdate(int(S('abk_last') or 0)) if S('abk_last') not in ('', '0') else '-'}",
+                          settings_kb(["abk_hours"], [("abk_on", "بکاپ خودکار")]))
+    if d == "nx:mnt":
+        return await show(update, f"{E('maintenance')} <b>حالت تعمیرات</b>\nوقتی روشن باشد، فقط ادمین‌ها از ربات استفاده می‌کنند.",
+                          [row(btn("ویرایش متن تعمیرات", "tx:maintenance", None, "text"))] + settings_kb([], [("mnt_on", "حالت تعمیرات")]))
+    if d == "nx:fj":
+        return await show(update, f"{E('forcejoin')} <b>عضویت اجباری</b>\nربات باید ادمین کانال باشد تا عضویت را چک کند.",
+                          [row(btn("ویرایش متن عضویت اجباری", "tx:force_join", None, "text"))] +
+                          settings_kb(["fj_chat", "fj_url"], [("fj_on", "عضویت اجباری")]))
+    if d == "nx:gw":
+        return await show(update, f"{E('gateway')} <b>درگاه پرداخت و ارز دیجیتال</b>\nگزینه‌های فعال در صفحه پرداخت کاربر کنار کارت به کارت نمایش داده می‌شوند.",
+                          settings_kb(["zp_merchant", "zp_callback", "cr_wallet", "cr_network", "cr_rate"],
+                                      [("zp_on", "درگاه زرین‌پال"), ("zp_sandbox", "حالت تست زرین‌پال"), ("cr_on", "پرداخت ارز دیجیتال")]))
+    if d == "nx:grp": clear_state(ctx); return await nx_groups_page(update)
+    if d == "nx:bc":
+        return await show(update, f"{E('bc2')} <b>پیام همگانی پیشرفته</b>\nنوع ارسال و گیرنده‌ها را انتخاب کن:",
+                          [row(btn("کپی برای همه", "nbc:copy:all", BLUE, "bc"), btn("فوروارد برای همه", "nbc:fwd:all", BLUE, "bc")),
+                           row(btn("کپی برای دارندگان سرویس فعال", "nbc:copy:act", GREEN, "subs")),
+                           row(btn("فوروارد برای دارندگان سرویس فعال", "nbc:fwd:act", GREEN, "subs"))] + admin_back())
+    if p[0] == "nbc":
+        set_state(ctx, "nxbc", p[1], p[2])
+        return await show(update, "پیامت را بفرست (متن، عکس، ویدیو یا هر چیزی). بعد از ارسال، گزارش کامل می‌گیری.", admin_back("nx:bc"))
+    if p[0] == "ngp":
+        if p[1] == "add":
+            set_state(ctx, "ngpadd"); return await show(update, "نام گروه و درصد تخفیف را بفرست:\n<code>VIP 10</code>", admin_back("nx:grp"))
+        if p[1] == "e":
+            g = _nx_group_by_idx(p[2])
+            if not g: return await nx_groups_page(update)
+            kb = [row(btn("تغییر درصد تخفیف", f"ngp:p:{p[2]}", BLUE, "price"))]
+            if g != "عادی": kb.append(row(btn("حذف گروه", f"ngp:d:{p[2]}", RED, "no")))
+            return await show(update, f"{E('groups')} گروه <b>{html.escape(g)}</b>\nتخفیف: <b>{nx_group_pct(g)}%</b>", kb + admin_back("nx:grp"))
+        if p[1] == "p":
+            set_state(ctx, "ngpset", p[2]); return await show(update, "درصد تخفیف جدید را بفرست (۰ تا ۱۰۰):", admin_back("nx:grp"))
+        if p[1] == "d":
+            g = _nx_group_by_idx(p[2])
+            if g and g != "عادی":
+                set_S("groups", "|".join(x for x in nx_groups() if x != g))
+                ex("UPDATE users SET grp='عادی' WHERE grp=?", (g,)); added_audit(uid, "group_delete", g)
+            return await nx_groups_page(update)
+        if p[1] == "s":
+            tid, g = int(p[2]), _nx_group_by_idx(p[3])
+            if g: ex("UPDATE users SET grp=? WHERE id=?", (g, tid)); added_audit(uid, "user_group", tid, g)
+            return await nx_profile(update, tid)
+    if p[0] == "nup":
+        act, tid = p[1], int(p[2])
+        if not get_user(tid): return await show(update, "کاربر پیدا نشد.", admin_back())
+        if act == "v": clear_state(ctx); return await nx_profile(update, tid)
+        if act in ("add", "sub"):
+            set_state(ctx, "nxbal", act, tid)
+            return await show(update, f"مبلغ {'افزایش' if act == 'add' else 'کسر'} برای <code>{tid}</code> را بفرست (تومان):", [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+        if act == "ban":
+            nb = 0 if get_user(tid)["banned"] else 1
+            ex("UPDATE users SET banned=? WHERE id=?", (nb, tid)); added_audit(uid, "ban" if nb else "unban", tid)
+            return await nx_profile(update, tid)
+        if act == "svc": return await nx_user_services(update, tid)
+        if act == "trx": return await nx_user_trx(update, tid)
+        if act == "grp":
+            gs = ["عادی"] + nx_groups()
+            kb = [row(btn(f"{g} ({nx_group_pct(g)}%)", f"ngp:s:{tid}:{i - 1}", BLUE)) for i, g in enumerate(gs)]
+            return await show(update, f"گروه جدید کاربر <code>{tid}</code> را انتخاب کن:", kb + [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+        if act == "msg":
+            set_state(ctx, "nxmsg", tid)
+            return await show(update, f"پیام برای کاربر <code>{tid}</code> را بفرست (متن/عکس/هرچی):", [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+        if act == "tk":
+            rows = q("SELECT * FROM support_tickets WHERE user_id=? ORDER BY id DESC LIMIT 20", (tid,))
+            kb = [row(btn(f"{'🟢' if r['status'] == 'open' else '🔒'} #{r['id']} | {jdate(r['created'])}", f"addtk:{r['id']}")) for r in rows]
+            return await show(update, f"🎫 تیکت‌های کاربر <code>{tid}</code>" + ("" if rows else "\n\nتیکتی ندارد."), kb + [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+        if act == "mk":
+            pans = q("SELECT * FROM panels WHERE active=1")
+            kb = [row(btn(f"{x['name']} ({x['ptype']})", f"nmk:p:{tid}:{x['id']}", BLUE)) for x in pans]
+            return await show(update, "پنل/لوکیشن سرویس رایگان را انتخاب کن:" if pans else "هیچ پنل فعالی نداریم.", kb + [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+    if p[0] == "nmk":
+        tid, pid = int(p[2]), int(p[3])
+        if p[1] == "p":
+            pls = q("SELECT * FROM plans WHERE active=1 ORDER BY months, gb")
+            kb = [row(btn(f"{x['months']}ماهه | {x['gb']}گیگ | {x['days']}روز", f"nmk:s:{tid}:{pid}:{x['id']}", GREEN)) for x in pls]
+            return await show(update, "پلن سرویس را انتخاب کن (برای کاربر رایگان ساخته می‌شود و از موجودی کم نمی‌شود):", kb + [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+        if p[1] == "s":
+            pn = q("SELECT * FROM panels WHERE id=?", (pid,), True); pl = q("SELECT * FROM plans WHERE id=?", (int(p[4]),), True)
+            if not pn or not pl: return await show(update, "پنل یا پلن پیدا نشد.", admin_back())
+            try: sid, manual = await build_service(ctx, tid, pn, pl["gb"], pl["days"], 0, pl["id"])
+            except Exception as e:
+                log.exception("admin manual service")
+                return await show(update, f"❌ ساخت سرویس خطا داد: {html.escape(str(e))[:400]}", [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", RED, "back"))])
+            trx_log(tid, "admin", sid, pl["id"], pn["id"], pl["gb"], pl["days"], 0); added_audit(uid, "admin_service", tid, sid)
+            if not manual:
+                try: await deliver(ctx, tid, sid)
+                except Exception as e: log.warning("deliver admin svc: %s", e)
+            return await show(update, "✅ سرویس ساخته شد" + (" (دستی: لینک را از پیام سفارش بفرست)." if manual else " و برای کاربر ارسال شد."),
+                              [row(btn("بازگشت به پروفایل", f"nup:v:{tid}", BLUE, "back"))])
+    if p[0] == "nsv":
+        sid = int(p[2])
+        if p[1] == "v": clear_state(ctx); return await nx_service_view(update, sid)
+        if p[1] in ("gb", "dy"):
+            set_state(ctx, "nxsvadd", sid, p[1])
+            return await show(update, f"چند {'گیگ' if p[1] == 'gb' else 'روز'} اضافه شود؟ عددش را بفرست:", [row(btn("بازگشت به سرویس", f"nsv:v:{sid}", RED, "back"))])
+
+
+async def nx_message(update, ctx, uid, st):
+    m = update.effective_message; name = st[0]; txt = (m.text or "").strip()
+    if name == "nxcrypto":
+        if not m.photo: return await m.reply_text("لطفاً اسکرین‌شات تراکنش را بفرست (TXID در کپشن).")
+        amount, gift = st[1], st[2]
+        bonus = amount * int(S("gift_percent")) // 100 if gift and amount >= int(S("gift_min")) else 0
+        pid = ex("INSERT INTO payments(user_id,amount,bonus,photo,created) VALUES(?,?,?,?,?)", (uid, amount, bonus, m.photo[-1].file_id, int(time.time())))
+        clear_state(ctx); u = get_user(uid)
+        cap = (f"💎 رسید ارز دیجیتال #{pid}\nکاربر: <code>{uid}</code> ({html.escape(u['name'] or '')})\n"
+               f"مبلغ: {money(amount)}{f' + هدیه {money(bonus)}' if bonus else ''} تومان\nTXID: <code>{html.escape((m.caption or '-')[:200])}</code>")
+        kb = IKM([row(btn("تأیید", f"pa:{pid}", GREEN, "ok"), btn("رد", f"pr:{pid}", RED, "no"))])
+        for a in ADMIN_IDS:
+            try: await ctx.bot.send_photo(a, m.photo[-1].file_id, caption=cap, parse_mode=ParseMode.HTML, reply_markup=kb)
+            except Exception: pass
+        return await m.reply_text(render("receipt_wait"), parse_mode=ParseMode.HTML, reply_markup=IKM(back_home()))
+    if not is_admin(uid): clear_state(ctx); return
+    if name == "nxprof":
+        t = nx_digits(txt).lstrip("@")
+        u = get_user(int(t)) if t.isdigit() else q("SELECT * FROM users WHERE LOWER(username)=LOWER(?)", (t,), True)
+        if not u: return await m.reply_text("کاربر پیدا نشد. آیدی عددی یا یوزرنیم درست بفرست.")
+        clear_state(ctx); return await nx_profile(update, u["id"])
+    if name == "nxbal":
+        t = nx_digits(txt)
+        if not t.isdigit() or int(t) <= 0: return await m.reply_text("فقط عدد مثبت بفرست.")
+        act, tid, amt = st[1], st[2], int(t)
+        ex("UPDATE users SET balance=balance" + ("+" if act == "add" else "-") + "? WHERE id=?", (amt, tid))
+        added_audit(uid, "balance_" + act, tid, amt); clear_state(ctx)
+        try: await ctx.bot.send_message(tid, f"{'➕' if act == 'add' else '➖'} {money(amt)} تومان {'به' if act == 'add' else 'از'} کیف پول شما {'اضافه' if act == 'add' else 'کسر'} شد.")
+        except Exception: pass
+        await m.reply_text(f"✅ انجام شد. موجودی جدید: {money(get_user(tid)['balance'])}")
+        return await nx_profile(update, tid)
+    if name == "nxmsg":
+        tid = st[1]; clear_state(ctx)
+        try:
+            await ctx.bot.send_message(tid, "📩 <b>پیام از پشتیبانی:</b>", parse_mode=ParseMode.HTML); await m.copy(tid)
+            added_audit(uid, "user_message", tid); res = "✅ پیام ارسال شد."
+        except Exception as e: res = f"❌ ارسال نشد: {e}"
+        return await m.reply_text(res, reply_markup=IKM([row(btn("بازگشت به پروفایل", f"nup:v:{tid}", BLUE, "back"))]))
+    if name == "nxsvadd":
+        t = nx_digits(txt)
+        try: val = float(t)
+        except Exception: val = 0
+        if val <= 0: return await m.reply_text("فقط عدد مثبت بفرست.")
+        if val.is_integer(): val = int(val)
+        clear_state(ctx); return await nx_service_add(update, ctx, uid, st[1], st[2], val)
+    if name == "ngpadd":
+        parts = txt.split()
+        if len(parts) < 2 or not nx_digits(parts[-1]).isdigit(): return await m.reply_text("فرمت: نام درصد\nمثال: <code>VIP 10</code>", parse_mode=ParseMode.HTML)
+        g = " ".join(parts[:-1]).replace("|", "").replace(":", "")[:20]; pct = max(0, min(100, int(nx_digits(parts[-1]))))
+        if g == "عادی" or g in nx_groups(): set_S("grp_pct:" + g, pct)
+        else: set_S("groups", "|".join(nx_groups() + [g])); set_S("grp_pct:" + g, pct)
+        added_audit(uid, "group_save", g, pct); clear_state(ctx); return await nx_groups_page(update)
+    if name == "ngpset":
+        t = nx_digits(txt).replace("%", "")
+        if not t.isdigit() or int(t) > 100: return await m.reply_text("فقط عدد ۰ تا ۱۰۰ بفرست.")
+        g = _nx_group_by_idx(st[1])
+        if g: set_S("grp_pct:" + g, int(t)); added_audit(uid, "group_pct", g, t)
+        clear_state(ctx); return await nx_groups_page(update)
+    if name == "nxbc":
+        clear_state(ctx); return await nx_broadcast(update, ctx, uid, st[1], st[2])
+
+
+# ---------- پوشاندن هندلرهای اصلی (در آخر همان تابع قبلی اجرا می‌شود) ----------
+_nx_orig_on_callback = on_callback
+async def on_callback(update, ctx):
+    cq = update.callback_query; uid = cq.from_user.id; d = cq.data or ""
+    u = touch(cq.from_user)
+    if u["banned"]: return await _nx_orig_on_callback(update, ctx)
+    if nx_maint_block(uid): return await cq.answer(_nx_plain(render("maintenance")), show_alert=True)
+    if d == "nfj:check":
+        _NX_FJ_CACHE.pop(uid, None)
+        if await nx_fj_ok(ctx.bot, uid):
+            await cq.answer("✅ عضویت تأیید شد"); clear_state(ctx); return await send_home(update, ctx, uid)
+        return await cq.answer("هنوز عضو کانال نشده‌ای.", show_alert=True)
+    if not await nx_fj_ok(ctx.bot, uid):
+        await cq.answer(); return await show(update, render("force_join"), nx_fj_kb())
+    pre = d.split(":")[0]
+    if pre in NX_PREFIXES_USER or pre in NX_PREFIXES_ADMIN:
+        if pre in NX_PREFIXES_ADMIN and not is_admin(uid): return await cq.answer()
+        if pre not in ("nzv", "nrc"): await cq.answer()
+        try: return await nx_callback(update, ctx, uid, d)
+        except Exception as e:
+            log.exception("nx callback %s", d)
+            try: await cq.answer("خطا: " + str(e)[:150], show_alert=True)
+            except Exception: pass
+            return
+    return await _nx_orig_on_callback(update, ctx)
+
+
+_nx_orig_on_message = on_message
+async def on_message(update, ctx):
+    m = update.effective_message
+    if not m or not update.effective_user: return await _nx_orig_on_message(update, ctx)
+    uid = update.effective_user.id
+    u = touch(update.effective_user)
+    if u["banned"]: return await _nx_orig_on_message(update, ctx)
+    if nx_maint_block(uid): return await m.reply_text(render("maintenance"), parse_mode=ParseMode.HTML)
+    st = ctx.user_data.get("state")
+    if st and st[0] in (NX_STATES_ADMIN | NX_STATES_USER):
+        return await nx_message(update, ctx, uid, st)
+    if st and st[0] in ("addticket", "addticketreply") and (m.photo or m.document):
+        return await nx_ticket_file(update, ctx, uid, st)
+    return await _nx_orig_on_message(update, ctx)
+
+
+_nx_orig_init_db_extra = init_db_extra
+def init_db_extra():
+    _nx_orig_init_db_extra()
+    nx_init_db()
+# ═══════════════════════════════ پایان افزودنی‌های نسخه جدید ═══════════════════════════════
+
+
+# Card-to-card purchase extension: additive only.
+_cardpay_orig_init_db_extra = init_db_extra
+def init_db_extra():
+    _cardpay_orig_init_db_extra()
+    CON.executescript("""
+    CREATE TABLE IF NOT EXISTS card_orders(
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        plan_id INTEGER NOT NULL, panel_id INTEGER NOT NULL, amount INTEGER NOT NULL,
+        bonus INTEGER DEFAULT 0, status TEXT DEFAULT 'pending', payment_id INTEGER,
+        created INTEGER, updated INTEGER
+    );
+    """)
+    cols = [r["name"] for r in q("PRAGMA table_info(payments)")]
+    if "order_id" not in cols:
+        ex("ALTER TABLE payments ADD COLUMN order_id INTEGER")
+    CON.commit()
+
+# Appearance groups for the three card-payment controls.
+BTN_GROUPS.update({
+    "ccp": "دکمه پرداخت کارت‌به‌کارت",
+    "ccopy": "دکمه کپی شماره کارت",
+    "ccpaid": "دکمه ارسال رسید کارت‌به‌کارت",
+    "ccopyamt": "دکمه کپی مبلغ ریال",
+})
+EMOJI.update({
+    "copycard": "📋",
+    "copyamount": "💰",
+})
+for _n in BTN_GROUPS.values():
+    if _n not in BTN_NAMES:
+        BTN_NAMES.append(_n)
+
+def _copy_text_btn(text, value, ek=None):
+    """Native Telegram copy button. It copies locally and sends no message."""
+    eid = emoji_id(ek) if ek else None
+    kw = {}
+    if eid:
+        kw["icon_custom_emoji_id"] = eid
+    label = text if eid else f"{text} {EMOJI.get(ek, '')}".strip()
+    try:
+        return IKB(label, copy_text={"text": str(value)}, **kw)
+    except (TypeError, AttributeError):
+        try:
+            return IKB(label, api_kwargs={"copy_text": {"text": str(value)}, **kw})
+        except TypeError:
+            # Old Telegram libraries cannot expose native copy buttons.
+            # Keep a harmless callback fallback rather than breaking the flow.
+            return IKB(label, callback_data="copy_unavailable", **kw)
+
+async def _cardpay_invoice(update, uid, plan_id, panel_id):
+    p = q("SELECT * FROM plans WHERE id=? AND active=1", (plan_id,), True)
+    pn = q("SELECT * FROM panels WHERE id=? AND active=1", (panel_id,), True)
+    if not p or not pn:
+        return await show(update, "این پلن/لوکیشن در دسترس نیست.", back_home())
+    price, dcline, _ = dc_price(uid, p["price"])
+    text = render("invoice", GB=p["gb"], DAYS=p["days"], PRICE=money(price),
+                  BALANCE=money(get_user(uid)["balance"]), LOCATION=html.escape(pn["name"])) + dcline
+    kb = [row(btn("پرداخت از کیف پول", f"pay:{plan_id}:{panel_id}", GREEN, "ok")),
+          row(btn("پرداخت کارت‌به‌کارت", f"ccp:{plan_id}:{panel_id}", BLUE, "card")),
+          row(btn("افزایش موجودی", "topup", None, "wallet")),
+          row(btn("استفاده از کد تخفیف", f"dc:b:{plan_id}:{panel_id}", BLUE, "discount")),
+          row(btn("بازگشت", "buy", RED, "back"))]
+    return await show(update, text, kb)
+
+async def _cardpay_start(update, ctx, uid, plan_id, panel_id):
+    p = q("SELECT * FROM plans WHERE id=? AND active=1", (plan_id,), True)
+    pn = q("SELECT * FROM panels WHERE id=? AND active=1", (panel_id,), True)
+    if not p or not pn:
+        return await show(update, "این پلن/لوکیشن در دسترس نیست.", back_home())
+    price, _, _ = dc_price(uid, p["price"])
+    now = int(time.time())
+    oid = ex("INSERT INTO card_orders(user_id,plan_id,panel_id,amount,created,updated) VALUES(?,?,?,?,?,?)",
+             (uid, plan_id, panel_id, price, now, now))
+    DC_PENDING.pop(uid, None)
+    text = (f"💳 <b>پرداخت کارت به کارت</b>\n\n"
+            f"لطفاً مبلغ <b>{money(price)} تومان</b> را به شماره کارت زیر واریز کنید:\n\n"
+            f"<code>{html.escape(S('card_number'))}</code>\n\n"
+            "⏳ این تراکنش تا ۳۰ دقیقه مهلت پرداخت دارد.\n\n"
+            "📸 پس از واریز، روی دکمه «پرداخت کردم» بزنید و عکس رسید را ارسال کنید.")
+    kb = [row(_copy_text_btn("کپی مبلغ (ریال)", price * 10, "copyamount"),
+              _copy_text_btn("کپی شماره کارت", S("card_number"), "copycard")),
+          row(btn("پرداخت کردم، ارسال رسید", f"ccpaid:{oid}", GREEN, "ok")),
+          row(btn("بازگشت به روش‌ها", f"inv:{plan_id}:{panel_id}", RED, "back"))]
+    return await show(update, text, kb)
+
+async def _cardpay_receipt_prompt(update, ctx, uid, oid):
+    order = q("SELECT * FROM card_orders WHERE id=? AND user_id=? AND status='pending'", (oid, uid), True)
+    if not order:
+        return await update.callback_query.message.reply_text("این سفارش دیگر در انتظار پرداخت نیست.")
+    set_state(ctx, "cardreceipt", oid)
+    return await show(update, "📸 <b>لطفاً عکس رسید واریزی را ارسال کنید.</b>\n✅ رسید معمولاً طی ۵ تا ۱۵ دقیقه بررسی می‌شود.",
+                      [row(btn("انصراف", f"inv:{order['plan_id']}:{order['panel_id']}", RED, "no"))])
+
+_cardpay_orig_on_callback = on_callback
+async def on_callback(update, ctx):
+    d = update.callback_query.data or ""
+    uid = update.effective_user.id
+    if d.startswith(("pa:", "pr:")):
+        if not is_admin(uid):
+            return await update.callback_query.answer("دسترسی ندارید.", show_alert=True)
+        pid = int(d[3:])
+        pay = q("SELECT * FROM payments WHERE id=? AND status='pending'", (pid,), True)
+        if pay and pay["order_id"]:
+            order = q("SELECT * FROM card_orders WHERE id=? AND status='pending'", (pay["order_id"],), True)
+            if not order:
+                return await update.callback_query.answer("این سفارش قبلاً بررسی شده.", show_alert=True)
+            if d.startswith("pr:"):
+                ex("UPDATE payments SET status='rejected' WHERE id=?", (pid,))
+                ex("UPDATE card_orders SET status='rejected',updated=? WHERE id=?", (int(time.time()), order["id"]))
+                try: await ctx.bot.send_message(order["user_id"], "❌ رسید خرید رد شد. با پشتیبانی در ارتباط باشید.")
+                except Exception: pass
+                return await update.callback_query.edit_message_caption(f"❌ رد شد #{pid}")
+            p = q("SELECT * FROM plans WHERE id=?", (order["plan_id"],), True)
+            pn = q("SELECT * FROM panels WHERE id=? AND active=1", (order["panel_id"],), True)
+            if not p or not pn:
+                return await update.callback_query.answer("پلن یا پنل دیگر در دسترس نیست.", show_alert=True)
+            try:
+                sid, manual = await build_service(ctx, order["user_id"], pn, p["gb"], p["days"],
+                                                  order["amount"], p["id"])
+                ex("UPDATE payments SET status='ok' WHERE id=?", (pid,))
+                ex("UPDATE card_orders SET status='ok',updated=? WHERE id=?", (int(time.time()), order["id"]))
+                trx_log(order["user_id"], "card_buy", sid, p["id"], pn["id"], p["gb"], p["days"], order["amount"])
+                if not manual:
+                    try:
+                        await deliver(ctx, order["user_id"], sid)
+                    except Exception:
+                        log.exception("card service delivery failed sid=%s", sid)
+                        try:
+                            await ctx.bot.send_message(
+                                order["user_id"],
+                                "✅ پرداخت تأیید و سرویس ساخته شد، اما ارسال خودکار لینک ناموفق بود. "
+                                "از بخش «اشتراک‌های من» سرویس را باز کنید.")
+                        except Exception:
+                            pass
+                else:
+                    await ctx.bot.send_message(order["user_id"], "✅ پرداخت تأیید شد. کانفیگ شما به‌زودی ارسال می‌شود.")
+                return await update.callback_query.edit_message_caption(f"✅ تأیید و سرویس ساخته شد #{pid}")
+            except Exception as e:
+                log.exception("card purchase approval failed")
+                return await update.callback_query.answer("ساخت سرویس ناموفق بود؛ رسید هنوز تأیید نشده.", show_alert=True)
+    if d.startswith("ccp:"):
+        _, a, b = d.split(":")
+        return await _cardpay_start(update, ctx, uid, int(a), int(b))
+    if d.startswith("ccpaid:"):
+        return await _cardpay_receipt_prompt(update, ctx, uid, int(d.split(":")[1]))
+    return await _cardpay_orig_on_callback(update, ctx)
+
+_cardpay_orig_on_message = on_message
+async def on_message(update, ctx):
+    st = ctx.user_data.get("state") or []
+    if st and st[0] == "cardreceipt":
+        uid = update.effective_user.id
+        m = update.effective_message
+        if not m.photo:
+            return await m.reply_text("📸 لطفاً فقط عکس رسید واریزی را ارسال کنید.")
+        oid = int(st[1])
+        order = q("SELECT * FROM card_orders WHERE id=? AND user_id=? AND status='pending'", (oid, uid), True)
+        if not order:
+            clear_state(ctx)
+            return await m.reply_text("این سفارش دیگر معتبر نیست.")
+        pid = ex("INSERT INTO payments(user_id,amount,bonus,photo,created,order_id) VALUES(?,?,?,?,?,?)",
+                 (uid, order["amount"], order["bonus"], m.photo[-1].file_id, int(time.time()), oid))
+        ex("UPDATE card_orders SET payment_id=?,updated=? WHERE id=?", (pid, int(time.time()), oid))
+        clear_state(ctx)
+        u = get_user(uid)
+        cap = (f"🧾 <b>رسید خرید مستقیم #{pid}</b>\nکاربر: <code>{uid}</code> ({html.escape(u['name'] or '')})\n"
+               f"مبلغ: <b>{money(order['amount'])} تومان</b>\nپلن: <code>#{order['plan_id']}</code> | پنل: <code>#{order['panel_id']}</code>")
+        kb = IKM([row(btn("تأیید", f"pa:{pid}", GREEN, "ok"), btn("رد", f"pr:{pid}", RED, "no"))])
+        for a in ADMIN_IDS:
+            try:
+                await ctx.bot.send_photo(a, m.photo[-1].file_id, caption=cap,
+                                         parse_mode=ParseMode.HTML, reply_markup=kb)
+            except Exception:
+                pass
+        return await m.reply_text("✅ رسید شما ثبت شد.\n⏱ تأیید رسید معمولاً طی ۵ تا ۱۵ دقیقه بررسی می‌شود.",
+                                  reply_markup=IKM(back_home()))
+    return await _cardpay_orig_on_message(update, ctx)
+
+_cardpay_orig_page_invoice = page_invoice
+async def page_invoice(update, uid, plan_id, panel_id):
+    return await _cardpay_invoice(update, uid, plan_id, panel_id)
+
+# Subscription-link rotation extension. Existing service actions remain unchanged.
+BTN_GROUPS.update({"sublink": "دکمه تغییر لینک ساب"})
+EMOJI.update({"sublink": "🔗"})
+if "دکمه تغییر لینک ساب" not in BTN_NAMES:
+    BTN_NAMES.append("دکمه تغییر لینک ساب")
+
+async def _rotate_subscription_link(update, ctx, uid, sid):
+    s = q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (sid, uid), True)
+    if not s:
+        return await show(update, "سرویس پیدا نشد.", back_home())
+    p = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True)
+    if not p or p["ptype"] == "manual":
+        return await show(update, "برای این نوع سرویس تغییر خودکار لینک ساب از پنل پشتیبانی نمی‌شود.",
+                          [row(btn("بازگشت به سرویس", f"sv:{sid}", RED, "back"))])
+    try:
+        async with _http(p) as c:
+            if p["ptype"] in XUI_PREFIX:
+                await _xlogin(c, p)
+                inb, inbound, client = await _xui_find(c, p["ptype"], p, s["username"])
+                if not client:
+                    raise Exception("کلاینت روی پنل پیدا نشد")
+                new_sid = secrets.token_hex(8)
+                client["subId"] = new_sid
+                r = await c.post(f"{XUI_PREFIX[p['ptype']].rstrip('/')}/updateClient/{_xui_cid(inbound, client)}",
+                                 data={"id": inb, "settings": json.dumps({"clients": [client]})})
+                j = r.json()
+                if not j.get("success"):
+                    raise Exception(j.get("msg") or "updateClient failed")
+                parts = (p["extra"] or "").split("|")
+                if len(parts) > 1 and parts[1].strip():
+                    new_sub = parts[1].strip().rstrip("/") + "/" + new_sid
+                else:
+                    new_sub = await _xui_sub(c, p["ptype"], p, new_sid)
+                if not new_sub:
+                    raise Exception("لینک ساب در تنظیمات پنل فعال نیست")
+            else:
+                return await show(update,
+                    "این پنل لینک ساب را با شناسه داخلی خودش می‌سازد و تغییر امن آن از API ممکن نیست؛ "
+                    "برای حفظ سرویس، چیزی حذف یا بازسازی نشد.",
+                    [row(btn("بازگشت به سرویس", f"sv:{sid}", RED, "back"))])
+        links = await _sub_links(new_sub) if new_sub.startswith("http") else []
+        ex("UPDATE services SET sub=?, link=? WHERE id=?", (new_sub, links[0] if links else new_sub, sid))
+        text = (f"✅ <b>لینک ساب تغییر کرد.</b>\n\n"
+                f"لینک قبلی دیگر روی پنل معتبر نیست.\n"
+                f"🔗 لینک جدید:\n<code>{html.escape(new_sub)}</code>")
+        return await show(update, text, [row(btn("بازگشت به سرویس", f"sv:{sid}", BLUE, "back"))] + back_home())
+    except Exception as e:
+        log.exception("rotate subscription link")
+        return await show(update, f"❌ تغییر لینک ساب انجام نشد:\n<code>{html.escape(str(e))[:400]}</code>",
+                          [row(btn("تلاش دوباره", f"sublink:{sid}", BLUE, "sublink")),
+                           row(btn("بازگشت به سرویس", f"sv:{sid}", RED, "back"))])
+
+_sublink_orig_page_service = page_service
+async def page_service(update, uid, sid):
+    s = q("SELECT * FROM services WHERE id=? AND user_id=? AND status!='deleted'", (sid, uid), True)
+    if not s:
+        return await _sublink_orig_page_service(update, uid, sid)
+    # Insert the new control before the existing service controls, preserving their order.
+    p = q("SELECT * FROM panels WHERE id=?", (s["panel_id"],), True)
+    extra = ""
+    if p and p["ptype"] != "manual" and s["status"] == "active":
+        try:
+            i = await panel_info(p, s["username"])
+            if i:
+                extra = (f"\nوضعیت: <b>{i['status']}</b>\nمصرف: <b>{i['used']:.2f}</b> از "
+                         f"<b>{i['total']:.0f}</b> گیگ\nانقضا: {i['expire']}")
+        except Exception:
+            extra = "\n(دریافت وضعیت از پنل ممکن نشد)"
+    link = s["sub"] or s["link"] or "هنوز ارسال نشده"
+    text = (f"{E('plan')} <b>{svc_name(s)}</b>\n<blockquote>📍 لوکیشن: {html.escape(p['name'] if p else '-')}\n"
+            f"{E('volume')} حجم: {s['gb']} گیگ\n{E('time')} انقضا: {jdate(s['expire'])}{extra}</blockquote>\n\n"
+            f"{E('link')} لینک:\n<code>{html.escape(link)}</code>")
+    kb = [row(btn("تغییر لینک ساب", f"sublink:{sid}", BLUE, "sublink"))]
+    kb += [row(btn("دریافت QR", f"qr:{sid}", BLUE, "qr"), btn("بروزرسانی وضعیت", f"sv:{sid}", None, "search")),
+           row(btn("QR کانفیگ", f"qrc:{sid}", BLUE, "qr")) if s["link"] and s["sub"] and s["link"] != s["sub"] else [],
+           row(btn("تمدید پلن", f"rn:{sid}", GREEN, "renew")) if s["status"] != "pending" else [],
+           row(btn("تغییر نام سرویس", f"sren:{sid}", BLUE, "rename"), btn("حذف سرویس", f"sdel:{sid}", RED, "delsrv")),
+           row(btn("بازگشت", "subs", RED, "back"))]
+    return await show(update, text, [r for r in kb if r])
+
+_sublink_orig_on_callback = on_callback
+async def on_callback(update, ctx):
+    d = update.callback_query.data or ""
+    if d.startswith("sublink:"):
+        uid = update.effective_user.id
+        return await _rotate_subscription_link(update, ctx, uid, int(d.split(":")[1]))
+    return await _sublink_orig_on_callback(update, ctx)
 
 if __name__ == "__main__":
     main()
