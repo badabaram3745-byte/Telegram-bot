@@ -23,7 +23,7 @@
       sModel: 'مدل', sRefresh: 'بروزرسانی لیست مدل‌ها', sChat: 'تنظیمات چت', sSystem: 'System prompt',
       sSystemPh: 'مثلاً: همیشه فارسی جواب بده', sTemp: 'خلاقیت', sMax: 'حداکثر توکن', sStream: 'پاسخ استریم (تایپ زنده)',
       sSpeak: 'پاسخ‌ها رو با صدا بخون', sDanger: 'منطقه خطر', deleteChat: 'حذف این چت', clearAll: 'پاک کردن همه چت‌ها',
-      save: 'ذخیره', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
+      save: 'ذخیره', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
     },
     en: {
       newChat: '+ New chat', settings: 'Settings', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
@@ -43,7 +43,7 @@
       sModel: 'Model', sRefresh: 'Refresh model list', sChat: 'Chat settings', sSystem: 'System prompt',
       sSystemPh: 'e.g. always answer in Persian', sTemp: 'Creativity', sMax: 'Max tokens', sStream: 'Stream replies (live typing)',
       sSpeak: 'Read replies aloud', sDanger: 'Danger zone', deleteChat: 'Delete this chat', clearAll: 'Delete all chats',
-      save: 'Save', close: 'Close', hint: 'Your key and settings stay in this browser only.', hintBase: 'Empty = server default'
+      save: 'Save', resetSettings: 'Reset settings', confirmReset: 'Reset all settings (API URL, key, language, theme) to defaults? Chats stay.', resetDone: 'Settings reset', close: 'Close', hint: 'Your key and settings stay in this browser only.', hintBase: 'Empty = server default'
     }
   };
 
@@ -422,12 +422,9 @@
     setSending(true);
     abortCtrl = new AbortController();
     const messages = [];
-    if (settings.system && settings.system.trim()) messages.push({ role: 'system', content: settings.system.trim() });
     c.messages.filter((m) => m !== asst).forEach((m) => messages.push(toApi(m)));
 
     const body = { model: settings.model, messages, stream: !!settings.stream };
-    if (settings.temperature !== '' && settings.temperature !== undefined) body.temperature = Number(settings.temperature);
-    if (Number(settings.maxTokens) > 0) body.max_tokens = Number(settings.maxTokens);
 
     const send = (b) => post('/api/chat', { base: settings.base, key: settings.key, payload: b }, abortCtrl.signal);
 
@@ -443,6 +440,8 @@
           body.max_tokens = Number(mt[1]);
           settings.maxTokens = body.max_tokens;
           persist();
+        } else if (/streaming/i.test(txt) && body.stream) {
+          body.stream = false;
         } else if (/must be a string/i.test(txt) && !flat) {
           body.messages = flattenMessages(body.messages);
           flat = true;
@@ -572,10 +571,6 @@
     $('setBase').value = settings.base;
     $('setBase').placeholder = config.hasDefaultBase ? t('hintBase') : 'https://.../v1';
     $('setKey').value = settings.key;
-    $('setSystem').value = settings.system;
-    $('setTemp').value = settings.temperature;
-    $('tempVal').textContent = Number(settings.temperature).toFixed(1);
-    $('setMax').value = settings.maxTokens;
     $('setStream').checked = !!settings.stream;
     $('setSpeak').checked = !!settings.speak;
     fillModels(settings.model);
@@ -600,9 +595,6 @@
       base,
       key: $('setKey').value.trim(),
       model: $('setModel').value || '',
-      system: $('setSystem').value,
-      temperature: Number($('setTemp').value),
-      maxTokens: Number($('setMax').value) || 0,
       stream: $('setStream').checked,
       speak: $('setSpeak').checked
     });
@@ -649,7 +641,6 @@
   $('saveSettings').onclick = saveSettings;
   $('loadModels').onclick = () => loadModels(false);
   $('setBase').addEventListener('change', () => { if ($('setBase').value.trim()) loadModels(true); });
-  $('setTemp').addEventListener('input', () => { $('tempVal').textContent = Number($('setTemp').value).toFixed(1); });
   $('langSeg').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     settings.lang = b.dataset.val; applyLang(); renderAll();
@@ -667,6 +658,16 @@
     persist();
     $('settingsModal').hidden = true;
     renderAll();
+  };
+  $('resetSettings').onclick = () => {
+    if (!confirm(t('confirmReset'))) return;
+    settings = Object.assign({}, DEF);
+    persist();
+    applyTheme();
+    applyLang();
+    renderAll();
+    openSettings();
+    toast(t('resetDone'));
   };
   $('clearAll').onclick = () => {
     if (!confirm(t('confirmClear'))) return;
