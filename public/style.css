@@ -89,3 +89,5 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 .toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);padding:10px 16px;border-radius:14px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:14px;max-width:90vw}
 
 .danger-zone .row{flex-wrap:wrap}
+
+.stamp{font-size:11px;color:var(--muted);margin:4px 6px 0}

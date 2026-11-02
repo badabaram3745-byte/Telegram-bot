@@ -23,7 +23,7 @@
       sModel: 'مدل', sRefresh: 'بروزرسانی لیست مدل‌ها', sChat: 'تنظیمات چت', sSystem: 'System prompt',
       sSystemPh: 'مثلاً: همیشه فارسی جواب بده', sTemp: 'خلاقیت', sMax: 'حداکثر توکن', sStream: 'پاسخ استریم (تایپ زنده)',
       sSpeak: 'پاسخ‌ها رو با صدا بخون', sDanger: 'منطقه خطر', deleteChat: 'حذف این چت', clearAll: 'پاک کردن همه چت‌ها',
-      save: 'ذخیره', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
+      save: 'ذخیره', classModel: 'این مدل فیلتر امنیتیه و برای چت نیست. یه مدل چت از لیست انتخاب کن.', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
     },
     en: {
       newChat: '+ New chat', settings: 'Settings', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
@@ -43,7 +43,7 @@
       sModel: 'Model', sRefresh: 'Refresh model list', sChat: 'Chat settings', sSystem: 'System prompt',
       sSystemPh: 'e.g. always answer in Persian', sTemp: 'Creativity', sMax: 'Max tokens', sStream: 'Stream replies (live typing)',
       sSpeak: 'Read replies aloud', sDanger: 'Danger zone', deleteChat: 'Delete this chat', clearAll: 'Delete all chats',
-      save: 'Save', resetSettings: 'Reset settings', confirmReset: 'Reset all settings (API URL, key, language, theme) to defaults? Chats stay.', resetDone: 'Settings reset', close: 'Close', hint: 'Your key and settings stay in this browser only.', hintBase: 'Empty = server default'
+      save: 'Save', classModel: 'This is a safety filter model, not a chat model. Pick a chat model from the list.', resetSettings: 'Reset settings', confirmReset: 'Reset all settings (API URL, key, language, theme) to defaults? Chats stay.', resetDone: 'Settings reset', close: 'Close', hint: 'Your key and settings stay in this browser only.', hintBase: 'Empty = server default'
     }
   };
 
@@ -87,6 +87,7 @@
   function isFa() { return settings.lang !== 'en'; }
 
   function friendly(status, text) {
+    if (/classification/i.test(String(text))) return t('classModel');
     let msg = '';
     try {
       const j = JSON.parse(text);
@@ -188,6 +189,12 @@
     });
   }
 
+  function fmtTime(ts) {
+    try {
+      return new Intl.DateTimeFormat(isFa() ? 'fa-IR' : 'en-US', { calendar: 'gregory', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(ts));
+    } catch { return new Date(ts).toLocaleString(); }
+  }
+
   function bubble(m, i) {
     const wrap = document.createElement('div');
     wrap.className = 'msg ' + m.role;
@@ -218,6 +225,12 @@
     }
     if (m.streaming) b.insertAdjacentHTML('beforeend', '<span class="cursor"></span>');
     wrap.append(b);
+    if (m.time) {
+      const st = document.createElement('div');
+      st.className = 'stamp';
+      st.textContent = fmtTime(m.time);
+      wrap.append(st);
+    }
     if (!m.streaming) {
       const bar = document.createElement('div');
       bar.className = 'msg-actions';
@@ -431,6 +444,7 @@
     try {
       let res = await send(body);
       let flat = false;
+      let single = false;
       for (let tries = 0; !res.ok && tries < 4; tries++) {
         const txt = await res.clone().text();
         const mt = txt.match(/less than or equal to (\d+)/i);
@@ -442,6 +456,10 @@
           persist();
         } else if (/streaming/i.test(txt) && body.stream) {
           body.stream = false;
+        } else if (/single user message/i.test(txt) && !single) {
+          const last = [...body.messages].reverse().find((m) => m.role === 'user');
+          if (last) body.messages = flattenMessages([last]);
+          single = true;
         } else if (/must be a string/i.test(txt) && !flat) {
           body.messages = flattenMessages(body.messages);
           flat = true;
@@ -509,6 +527,7 @@
     c.messages.push({
       role: 'user',
       text,
+      time: Date.now(),
       attachments: pending.map((a) => ({ kind: a.kind, name: a.name, mime: a.mime, url: a.url, text: a.text }))
     });
     if (!c.title && text) c.title = text.slice(0, 40);
@@ -516,7 +535,7 @@
     $('input').value = '';
     autosize();
 
-    const asst = { role: 'assistant', text: '', streaming: true };
+    const asst = { role: 'assistant', text: '', streaming: true, time: Date.now() };
     c.messages.push(asst);
     renderAll();
     await runCompletion(c, asst);
@@ -527,7 +546,7 @@
     const c = current();
     if (!c) return;
     c.messages.splice(i);
-    const asst = { role: 'assistant', text: '', streaming: true };
+    const asst = { role: 'assistant', text: '', streaming: true, time: Date.now() };
     c.messages.push(asst);
     renderAll();
     await runCompletion(c, asst);
