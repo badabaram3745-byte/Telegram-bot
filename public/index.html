@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0b0f19">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AI Chat">
+<title>AI Chat</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-head">
+      <button class="btn primary" id="newChat">+ چت جدید</button>
+      <button class="icon-btn" id="closeSide" aria-label="بستن">✕</button>
+    </div>
+    <div class="conv-list" id="convList"></div>
+    <div class="side-foot">
+      <button class="btn ghost" id="openSettings2">⚙️ تنظیمات</button>
+    </div>
+  </aside>
+  <div class="backdrop" id="backdrop"></div>
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn" id="menuBtn" aria-label="منو">☰</button>
+      <div class="title-wrap">
+        <div class="title" id="chatTitle">چت جدید</div>
+        <div class="sub" id="modelLabel">مدل انتخاب نشده</div>
+      </div>
+      <button class="icon-btn" id="exportBtn" title="خروجی گرفتن">⬇</button>
+      <button class="icon-btn" id="settingsBtn" title="تنظیمات">⚙️</button>
+    </header>
+    <section class="messages" id="messages"></section>
+    <div class="attach-bar" id="attachBar"></div>
+    <footer class="composer">
+      <button class="icon-btn" id="attachBtn" title="ارسال فایل">📎</button>
+      <input type="file" id="fileInput" multiple hidden accept="image/*,audio/*,application/pdf,text/*,.md,.json,.csv">
+      <button class="icon-btn" id="micBtn" title="ورودی صوتی (تبدیل به متن)">🎙️</button>
+      <textarea id="input" rows="1" placeholder="پیامت رو بنویس..."></textarea>
+      <button class="send-btn" id="sendBtn" title="ارسال">➤</button>
+    </footer>
+  </main>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<div class="modal" id="settingsModal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><strong>تنظیمات</strong><button class="icon-btn" id="closeSettings" aria-label="بستن">✕</button></div>
+    <label>آدرس API (مثلاً https://example.com/v1)
+      <input id="setBase" type="text" dir="ltr" placeholder="https://.../v1 (خالی = پیش‌فرض سرور)">
+    </label>
+    <label>API Key
+      <input id="setKey" type="password" dir="ltr" placeholder="sk-...">
+    </label>
+    <label>مدل
+      <div class="row">
+        <input id="setModel" list="modelList" dir="ltr" placeholder="مدل رو انتخاب یا تایپ کن">
+        <button class="btn ghost" id="loadModels" type="button">🔄 لیست</button>
+      </div>
+      <datalist id="modelList"></datalist>
+    </label>
+    <label>System prompt
+      <textarea id="setSystem" rows="3" placeholder="مثلاً: همیشه فارسی جواب بده"></textarea>
+    </label>
+    <div class="grid2">
+      <label>Temperature <input id="setTemp" type="number" step="0.1" min="0" max="2" dir="ltr"></label>
+      <label>Max tokens <input id="setMax" type="number" min="0" step="1" dir="ltr"></label>
+    </div>
+    <label class="check"><input id="setStream" type="checkbox"> پاسخ استریم (تایپ زنده)</label>
+    <label class="check"><input id="setSpeak" type="checkbox"> پاسخ‌ها رو با صدا بخون</label>
+    <label>تم
+      <select id="setTheme"><option value="dark">تاریک</option><option value="light">روشن</option></select>
+    </label>
+    <div class="modal-foot">
+      <button class="btn danger" id="clearAll" type="button">پاک کردن همه چت‌ها</button>
+      <button class="btn primary" id="saveSettings" type="button">ذخیره</button>
+    </div>
+    <div class="hint">کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.</div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
