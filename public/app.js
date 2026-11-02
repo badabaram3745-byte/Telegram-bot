@@ -9,7 +9,7 @@
       newChat: '+ چت جدید', settings: 'تنظیمات', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
       noModel: 'مدل انتخاب نشده', noChats: 'هنوز چتی نداری', welcomeTitle: 'چی توی ذهنته؟',
       welcomeText: 'متن، عکس، فایل، صدا یا ورودی صوتی بفرست. اول آدرس API رو از تنظیمات وصل کن.',
-      placeholder: 'پیامت رو بنویس...', attach: 'ارسال فایل', mic: 'ورودی صوتی', send: 'ارسال', stop: 'توقف',
+      placeholder: 'پیامت رو بنویس...', attach: 'ارسال فایل', mic: 'ضبط پیام صوتی', send: 'ارسال', stop: 'توقف',
       copy: 'کپی', read: 'خواندن', regen: 'تولید دوباره', remove: 'حذف', copied: 'کپی شد', copyFail: 'کپی نشد',
       stopped: '(متوقف شد)', chatEmpty: 'چت خالیه', needApi: 'اول آدرس API رو وارد کن', needModel: 'یه مدل انتخاب کن',
       noSpeech: 'مرورگرت خواندن با صدا رو نداره', noMic: 'این مرورگر ورودی صوتی نداره. Chrome، Edge یا Safari جدید رو امتحان کن.',
@@ -23,13 +23,13 @@
       sModel: 'مدل', sRefresh: 'بروزرسانی لیست مدل‌ها', sChat: 'تنظیمات چت', sSystem: 'System prompt',
       sSystemPh: 'مثلاً: همیشه فارسی جواب بده', sTemp: 'خلاقیت', sMax: 'حداکثر توکن', sStream: 'پاسخ استریم (تایپ زنده)',
       sSpeak: 'پاسخ‌ها رو با صدا بخون', sDanger: 'منطقه خطر', deleteChat: 'حذف این چت', clearAll: 'پاک کردن همه چت‌ها',
-      save: 'ذخیره', classModel: 'این مدل فیلتر امنیتیه و برای چت نیست. یه مدل چت از لیست انتخاب کن.', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
+      save: 'ذخیره', recShort: 'خیلی کوتاه بود', micDenied: 'دسترسی میکروفون داده نشد', stillUploading: 'صبر کن تا فایل آپلود بشه', recStart: 'ضبط شروع شد. دوباره بزن تا تموم شه', classModel: 'این مدل فیلتر امنیتیه و برای چت نیست. یه مدل چت از لیست انتخاب کن.', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
     },
     en: {
       newChat: '+ New chat', settings: 'Settings', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
       noModel: 'No model selected', noChats: 'No chats yet', welcomeTitle: 'What’s on your mind?',
       welcomeText: 'Send text, images, files, audio or voice input. Connect your API URL in Settings first.',
-      placeholder: 'Type a message...', attach: 'Attach file', mic: 'Voice input', send: 'Send', stop: 'Stop',
+      placeholder: 'Type a message...', attach: 'Attach file', mic: 'Record voice message', send: 'Send', stop: 'Stop',
       copy: 'Copy', read: 'Read aloud', regen: 'Regenerate', remove: 'Delete', copied: 'Copied', copyFail: 'Copy failed',
       stopped: '(stopped)', chatEmpty: 'This chat is empty', needApi: 'Enter your API URL first', needModel: 'Pick a model',
       noSpeech: 'Your browser can’t read text aloud', noMic: 'This browser has no voice input. Try Chrome, Edge or recent Safari.',
@@ -43,7 +43,7 @@
       sModel: 'Model', sRefresh: 'Refresh model list', sChat: 'Chat settings', sSystem: 'System prompt',
       sSystemPh: 'e.g. always answer in Persian', sTemp: 'Creativity', sMax: 'Max tokens', sStream: 'Stream replies (live typing)',
       sSpeak: 'Read replies aloud', sDanger: 'Danger zone', deleteChat: 'Delete this chat', clearAll: 'Delete all chats',
-      save: 'Save', classModel: 'This is a safety filter model, not a chat model. Pick a chat model from the list.', resetSettings: 'Reset settings', confirmReset: 'Reset all settings (API URL, key, language, theme) to defaults? Chats stay.', resetDone: 'Settings reset', close: 'Close', hint: 'Your key and settings stay in this browser only.', hintBase: 'Empty = server default'
+      save: 'Save', recShort: 'Too short', micDenied: 'Microphone access was denied', stillUploading: 'Wait for the upload to finish', recStart: 'Recording. Tap again to stop', classModel: 'This is a safety filter model, not a chat model. Pick a chat model from the list.', resetSettings: 'Reset settings', confirmReset: 'Reset all settings (API URL, key, language, theme) to defaults? Chats stay.', resetDone: 'Settings reset', close: 'Close', hint: 'Your key and settings stay in this browser only.', hintBase: 'Empty = server default'
     }
   };
 
@@ -278,35 +278,20 @@
     requestAnimationFrame(() => { rafPending = false; renderMessages(); });
   }
 
-  function renderAttachBar() {
-    const bar = $('attachBar');
-    bar.innerHTML = '';
-    pending.forEach((a, idx) => {
-      const s = document.createElement('span');
-      s.className = 'chip';
-      s.textContent = (a.kind === 'image' ? '🖼 ' : a.kind === 'audio' ? '🎵 ' : '📄 ') + a.name;
-      const x = document.createElement('button');
-      x.className = 'mini'; x.textContent = '✕';
-      x.onclick = () => { pending.splice(idx, 1); renderAttachBar(); };
-      s.append(x);
-      bar.append(s);
-    });
-  }
-
   // ---------- files ----------
-  function toDataURL(f) {
+  function readDataUrl(f, onp) {
     return new Promise((res, rej) => {
       const r = new FileReader();
+      r.onprogress = (e) => { if (e.lengthComputable && onp) onp(e.loaded / e.total); };
       r.onload = () => res(r.result);
       r.onerror = () => rej(new Error('read'));
       r.readAsDataURL(f);
     });
   }
 
-  function shrinkImage(f) {
+  function shrinkImage(dataUrl) {
     return new Promise((res, rej) => {
       const img = new Image();
-      const url = URL.createObjectURL(f);
       img.onload = () => {
         const max = 1024;
         const r = Math.min(1, max / Math.max(img.width, img.height));
@@ -317,36 +302,88 @@
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
-        URL.revokeObjectURL(url);
         res(cv.toDataURL('image/jpeg', 0.82));
       };
       img.onerror = () => rej(new Error('img'));
-      img.src = url;
+      img.src = dataUrl;
     });
   }
 
-  async function readFile(f) {
+  async function readFile(f, setP) {
     const mime = f.type || '';
-    if (mime.startsWith('image/')) return { kind: 'image', name: f.name, mime: 'image/jpeg', url: await shrinkImage(f) };
-    if (mime.startsWith('audio/')) {
-      if (f.size > 3 * 1024 * 1024) throw new Error(t('tooBig'));
-      return { kind: 'audio', name: f.name, mime, url: await toDataURL(f) };
+    const isImg = mime.startsWith('image/');
+    const isAudio = mime.startsWith('audio/');
+    const isPdf = mime === 'application/pdf';
+    const isText = !isImg && !isAudio && !isPdf && (mime.startsWith('text/') || /\.(md|json|csv|txt|js|ts|py|html|css|xml|ya?ml|log)$/i.test(f.name));
+    if (!isImg && !isAudio && !isPdf && !isText) throw new Error(t('unsupported'));
+    if ((isAudio || isPdf) && f.size > 3 * 1024 * 1024) throw new Error(t('tooBig'));
+    if (isText) {
+      setP(50);
+      return { kind: 'text', name: f.name, mime: 'text/plain', text: (await f.text()).slice(0, 100000) };
     }
-    if (mime === 'application/pdf') {
-      if (f.size > 3 * 1024 * 1024) throw new Error(t('tooBig'));
-      return { kind: 'pdf', name: f.name, mime, url: await toDataURL(f) };
+    const dataUrl = await readDataUrl(f, (p) => setP(Math.round(p * 80)));
+    if (isImg) {
+      setP(90);
+      return { kind: 'image', name: f.name, mime: 'image/jpeg', url: await shrinkImage(dataUrl) };
     }
-    const isText = mime.startsWith('text/') || /\.(md|json|csv|txt|js|ts|py|html|css|xml|ya?ml|log)$/i.test(f.name);
-    if (isText) return { kind: 'text', name: f.name, mime: 'text/plain', text: (await f.text()).slice(0, 100000) };
-    throw new Error(t('unsupported'));
+    setP(95);
+    return { kind: isAudio ? 'audio' : 'pdf', name: f.name, mime, url: dataUrl };
   }
 
   async function handleFiles(list) {
     for (const f of Array.from(list)) {
-      try { pending.push(await readFile(f)); }
-      catch (err) { toast(f.name + ': ' + err.message, 4000); }
+      const item = {
+        id: uid(), name: f.name, kind: 'pending', progress: 0, done: false,
+        preview: (f.type || '').startsWith('image/') ? URL.createObjectURL(f) : ''
+      };
+      pending.push(item);
+      renderAttachBar();
+      try {
+        const data = await readFile(f, (p) => { item.progress = p; renderAttachBar(); });
+        Object.assign(item, data, { progress: 100, done: true });
+      } catch (err) {
+        pending = pending.filter((x) => x !== item);
+        toast(f.name + ': ' + err.message, 4000);
+      }
+      renderAttachBar();
     }
-    renderAttachBar();
+  }
+
+  function ringHtml(p) {
+    const r = 18, c = 2 * Math.PI * r;
+    const pct = Math.min(100, Math.max(0, p));
+    const off = c * (1 - pct / 100);
+    return '<div class="ring"><svg viewBox="0 0 44 44">'
+      + '<circle cx="22" cy="22" r="' + r + '" class="ring-bg"/>'
+      + '<circle cx="22" cy="22" r="' + r + '" class="ring-fg" style="stroke-dasharray:' + c.toFixed(2) + ';stroke-dashoffset:' + off.toFixed(2) + '"/>'
+      + '</svg><span>' + Math.round(pct) + '%</span></div>';
+  }
+
+  function renderAttachBar() {
+    const bar = $('attachBar');
+    bar.innerHTML = '';
+    pending.forEach((a) => {
+      const card = document.createElement('div');
+      card.className = 'thumb';
+      if (a.kind === 'image' || a.preview) {
+        const im = document.createElement('img');
+        im.src = a.preview || a.url;
+        im.alt = a.name;
+        card.append(im);
+      } else {
+        const fc = document.createElement('div');
+        fc.className = 'file-card';
+        fc.textContent = (a.kind === 'audio' ? '🎵 ' : '📄 ') + a.name;
+        card.append(fc);
+      }
+      if (!a.done) card.insertAdjacentHTML('beforeend', ringHtml(a.progress || 0));
+      const x = document.createElement('button');
+      x.className = 'thumb-x';
+      x.textContent = '✕';
+      x.onclick = () => { pending = pending.filter((p) => p !== a); renderAttachBar(); };
+      card.append(x);
+      bar.append(card);
+    });
   }
 
   $('attachBtn').onclick = () => $('fileInput').click();
@@ -359,26 +396,70 @@
     if (files && files.length) { e.preventDefault(); handleFiles(files); }
   });
 
-  // ---------- voice input ----------
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  $('micBtn').onclick = () => {
-    if (!SR) return toast(t('noMic'), 4000);
-    if (recog) { recog.stop(); return; }
-    recog = new SR();
-    recog.lang = isFa() ? 'fa-IR' : 'en-US';
-    recog.interimResults = true;
-    recog.continuous = false;
-    const base = $('input').value;
-    recog.onresult = (e) => {
-      let s = '';
-      for (const r of e.results) s += r[0].transcript;
-      $('input').value = (base ? base + ' ' : '') + s;
-      autosize();
-    };
-    recog.onend = () => { recog = null; $('micBtn').classList.remove('rec'); };
-    recog.onerror = () => { recog = null; $('micBtn').classList.remove('rec'); toast(t('micFail')); };
-    recog.start();
+  // ---------- voice message (record and attach) ----------
+  let rec = null;
+
+  function encodeWav(samples, inRate, outRate) {
+    const ratio = inRate / outRate;
+    const outLen = Math.floor(samples.length / ratio);
+    const out = new Int16Array(outLen);
+    for (let i = 0; i < outLen; i++) {
+      const s = Math.max(-1, Math.min(1, samples[Math.floor(i * ratio)]));
+      out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    const buf = new ArrayBuffer(44 + out.length * 2);
+    const v = new DataView(buf);
+    const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + out.length * 2, true); w(8, 'WAVE');
+    w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, outRate, true); v.setUint32(28, outRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    w(36, 'data'); v.setUint32(40, out.length * 2, true);
+    for (let i = 0; i < out.length; i++) v.setInt16(44 + i * 2, out[i], true);
+    return buf;
+  }
+
+  async function startRec() {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    await ctx.resume();
+    const src = ctx.createMediaStreamSource(stream);
+    const proc = ctx.createScriptProcessor(4096, 1, 1);
+    const chunks = [];
+    proc.onaudioprocess = (e) => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+    src.connect(proc);
+    proc.connect(ctx.destination);
+    rec = { stream, ctx, src, proc, chunks, timer: null };
+    rec.timer = setTimeout(() => { if (rec) stopRec(); }, 90000);
     $('micBtn').classList.add('rec');
+    toast(t('recStart'), 2000);
+  }
+
+  async function stopRec() {
+    const r = rec;
+    if (!r) return;
+    rec = null;
+    clearTimeout(r.timer);
+    r.proc.disconnect();
+    r.src.disconnect();
+    r.stream.getTracks().forEach((tr) => tr.stop());
+    const rate = r.ctx.sampleRate;
+    await r.ctx.close();
+    $('micBtn').classList.remove('rec');
+    const total = r.chunks.reduce((n, c) => n + c.length, 0);
+    if (total < rate * 0.5) return toast(t('recShort'));
+    const pcm = new Float32Array(total);
+    let o = 0;
+    r.chunks.forEach((c) => { pcm.set(c, o); o += c.length; });
+    const wav = encodeWav(pcm, rate, 16000);
+    const name = 'voice-' + new Date().toISOString().slice(11, 19).replace(/:/g, '') + '.wav';
+    handleFiles([new File([new Blob([wav], { type: 'audio/wav' })], name, { type: 'audio/wav' })]);
+  }
+
+  $('micBtn').onclick = async () => {
+    if (rec) return stopRec();
+    if (!navigator.mediaDevices || !(window.AudioContext || window.webkitAudioContext)) return toast(t('noMic'), 4000);
+    try { await startRec(); } catch { toast(t('micDenied'), 4000); }
   };
 
   // ---------- API messages ----------
@@ -519,6 +600,7 @@
   async function send(textIn) {
     if (busy) return;
     const text = (textIn || '').trim();
+    if (pending.some((a) => !a.done)) { toast(t('stillUploading')); return; }
     if (!text && !pending.length) return;
     if (!hasApi()) { openSettings(); toast(t('needApi')); return; }
     if (!settings.model) { openSettings(); toast(t('needModel')); return; }
