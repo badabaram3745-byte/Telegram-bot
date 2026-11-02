@@ -406,6 +406,17 @@
     b.title = on ? t('stop') : t('send');
   }
 
+  function flattenMessages(msgs) {
+    return msgs.map((m) => {
+      if (!Array.isArray(m.content)) return m;
+      const text = m.content.map((p) => {
+        if (p.type === 'text') return p.text;
+        return '[attachment omitted: this model only accepts text]';
+      }).join('\n');
+      return { role: m.role, content: text };
+    });
+  }
+
   async function runCompletion(c, asst) {
     busy = true;
     setSending(true);
@@ -422,16 +433,25 @@
 
     try {
       let res = await send(body);
-      if (!res.ok) {
-        const txt = await res.text();
+      let flat = false;
+      for (let tries = 0; !res.ok && tries < 4; tries++) {
+        const txt = await res.clone().text();
+        const mt = txt.match(/less than or equal to (\d+)/i);
         if (/temperature/i.test(txt) && 'temperature' in body) {
           delete body.temperature;
-          res = await send(body);
-          if (!res.ok) throw new Error(friendly(res.status, await res.text()));
+        } else if (/max_tokens/i.test(txt) && mt) {
+          body.max_tokens = Number(mt[1]);
+          settings.maxTokens = body.max_tokens;
+          persist();
+        } else if (/must be a string/i.test(txt) && !flat) {
+          body.messages = flattenMessages(body.messages);
+          flat = true;
         } else {
-          throw new Error(friendly(res.status, txt));
+          break;
         }
+        res = await send(body);
       }
+      if (!res.ok) throw new Error(friendly(res.status, await res.text()));
 
       const ct = res.headers.get('content-type') || '';
       if (body.stream && ct.includes('text/event-stream')) {
