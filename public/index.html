@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<meta name="theme-color" content="#0b0f19">
+<meta name="theme-color" content="#0a0d14">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="AI Chat">
 <title>AI Chat</title>
@@ -16,33 +16,43 @@
 <div class="app" id="app">
   <aside class="sidebar" id="sidebar">
     <div class="side-head">
-      <button class="btn primary" id="newChat">+ چت جدید</button>
-      <button class="icon-btn" id="closeSide" aria-label="بستن">✕</button>
+      <button class="new-chat" id="newChat" data-i18n="newChat">+ چت جدید</button>
     </div>
     <div class="conv-list" id="convList"></div>
     <div class="side-foot">
-      <button class="btn ghost" id="openSettings2">⚙️ تنظیمات</button>
+      <button id="openSettings2"><img src="/gear.png" alt=""><span data-i18n="settings">تنظیمات</span></button>
     </div>
   </aside>
   <div class="backdrop" id="backdrop"></div>
+
   <main class="main">
     <header class="topbar">
-      <button class="icon-btn" id="menuBtn" aria-label="منو">☰</button>
+      <button class="icon-btn" id="settingsBtn" data-i18n-title="settings"><img src="/gear.png" alt=""></button>
       <div class="title-wrap">
-        <div class="title" id="chatTitle">چت جدید</div>
-        <div class="sub" id="modelLabel">مدل انتخاب نشده</div>
+        <div class="title" id="chatTitle" dir="auto"></div>
+        <div class="sub" id="modelLabel" dir="ltr"></div>
       </div>
-      <button class="icon-btn" id="exportBtn" title="خروجی گرفتن">⬇</button>
-      <button class="icon-btn" id="settingsBtn" title="تنظیمات">⚙️</button>
+      <button class="icon-btn" id="exportBtn" data-i18n-title="export">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg>
+      </button>
+      <button class="icon-btn" id="menuBtn" data-i18n-title="menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
     </header>
+
     <section class="messages" id="messages"></section>
     <div class="attach-bar" id="attachBar"></div>
+
     <footer class="composer">
-      <button class="icon-btn" id="attachBtn" title="ارسال فایل">📎</button>
+      <button class="icon-btn" id="attachBtn" data-i18n-title="attach">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 11l-8.5 8.5a5 5 0 01-7-7L14 4a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L15 7"/></svg>
+      </button>
       <input type="file" id="fileInput" multiple hidden accept="image/*,audio/*,application/pdf,text/*,.md,.json,.csv">
-      <button class="icon-btn" id="micBtn" title="ورودی صوتی (تبدیل به متن)">🎙️</button>
-      <textarea id="input" rows="1" placeholder="پیامت رو بنویس..."></textarea>
-      <button class="send-btn" id="sendBtn" title="ارسال">➤</button>
+      <button class="icon-btn" id="micBtn" data-i18n-title="mic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg>
+      </button>
+      <textarea id="input" rows="1" data-i18n-ph="placeholder"></textarea>
+      <button class="send-btn" id="sendBtn" data-i18n-title="send"><img src="/send.png" alt=""></button>
     </footer>
   </main>
 </div>
@@ -51,37 +61,71 @@
 
 <div class="modal" id="settingsModal" hidden>
   <div class="modal-card">
-    <div class="modal-head"><strong>تنظیمات</strong><button class="icon-btn" id="closeSettings" aria-label="بستن">✕</button></div>
-    <label>آدرس API (مثلاً https://example.com/v1)
-      <input id="setBase" type="text" dir="ltr" placeholder="https://.../v1 (خالی = پیش‌فرض سرور)">
-    </label>
-    <label>API Key
-      <input id="setKey" type="password" dir="ltr" placeholder="sk-...">
-    </label>
-    <label>مدل
+    <div class="modal-head">
+      <strong data-i18n="settings">تنظیمات</strong>
+      <button class="icon-btn" id="closeSettings" data-i18n-title="close">✕</button>
+    </div>
+
+    <div class="section">
+      <h4 data-i18n="sGeneral">عمومی</h4>
+      <label><span data-i18n="sLang">زبان</span>
+        <div class="seg" id="langSeg">
+          <button type="button" data-val="fa">فارسی</button>
+          <button type="button" data-val="en">English</button>
+        </div>
+      </label>
+      <label><span data-i18n="sTheme">تم</span>
+        <div class="seg" id="themeSeg">
+          <button type="button" data-val="system" data-i18n="themeSystem">سیستم</button>
+          <button type="button" data-val="dark" data-i18n="themeDark">تاریک</button>
+          <button type="button" data-val="light" data-i18n="themeLight">روشن</button>
+        </div>
+      </label>
+    </div>
+
+    <div class="section">
+      <h4 data-i18n="sApi">اتصال API</h4>
+      <label><span data-i18n="sApiUrl">آدرس API</span>
+        <input id="setBase" type="text" dir="ltr" placeholder="https://.../v1">
+      </label>
+      <label><span>API Key</span>
+        <input id="setKey" type="password" dir="ltr" placeholder="sk-...">
+      </label>
+      <label><span data-i18n="sModel">مدل</span>
+        <div class="row">
+          <select id="setModel" dir="ltr"></select>
+          <button class="icon-btn" id="loadModels" type="button" data-i18n-title="sRefresh">↻</button>
+        </div>
+      </label>
+    </div>
+
+    <div class="section">
+      <h4 data-i18n="sChat">تنظیمات چت</h4>
+      <label><span data-i18n="sSystem">System prompt</span>
+        <textarea id="setSystem" class="field" rows="3" data-i18n-ph="sSystemPh"></textarea>
+      </label>
+      <label><span><span data-i18n="sTemp">خلاقیت</span>: <span id="tempVal"></span></span>
+        <input id="setTemp" type="range" min="0" max="2" step="0.1" dir="ltr">
+      </label>
+      <label><span data-i18n="sMax">حداکثر توکن</span>
+        <input id="setMax" type="number" min="0" step="1" dir="ltr">
+      </label>
+      <label class="check"><input id="setStream" type="checkbox"> <span data-i18n="sStream">پاسخ استریم</span></label>
+      <label class="check"><input id="setSpeak" type="checkbox"> <span data-i18n="sSpeak">پاسخ‌ها رو با صدا بخون</span></label>
+    </div>
+
+    <div class="section danger-zone">
+      <h4 data-i18n="sDanger">منطقه خطر</h4>
       <div class="row">
-        <input id="setModel" list="modelList" dir="ltr" placeholder="مدل رو انتخاب یا تایپ کن">
-        <button class="btn ghost" id="loadModels" type="button">🔄 لیست</button>
+        <button class="btn ghost" id="deleteChat" type="button" data-i18n="deleteChat">حذف این چت</button>
+        <button class="btn danger" id="clearAll" type="button" data-i18n="clearAll">پاک کردن همه چت‌ها</button>
       </div>
-      <datalist id="modelList"></datalist>
-    </label>
-    <label>System prompt
-      <textarea id="setSystem" rows="3" placeholder="مثلاً: همیشه فارسی جواب بده"></textarea>
-    </label>
-    <div class="grid2">
-      <label>Temperature <input id="setTemp" type="number" step="0.1" min="0" max="2" dir="ltr"></label>
-      <label>Max tokens <input id="setMax" type="number" min="0" step="1" dir="ltr"></label>
     </div>
-    <label class="check"><input id="setStream" type="checkbox"> پاسخ استریم (تایپ زنده)</label>
-    <label class="check"><input id="setSpeak" type="checkbox"> پاسخ‌ها رو با صدا بخون</label>
-    <label>تم
-      <select id="setTheme"><option value="dark">تاریک</option><option value="light">روشن</option></select>
-    </label>
+
     <div class="modal-foot">
-      <button class="btn danger" id="clearAll" type="button">پاک کردن همه چت‌ها</button>
-      <button class="btn primary" id="saveSettings" type="button">ذخیره</button>
+      <span class="hint" data-i18n="hint">کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.</span>
+      <button class="btn primary" id="saveSettings" type="button" data-i18n="save">ذخیره</button>
     </div>
-    <div class="hint">کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.</div>
   </div>
 </div>
 

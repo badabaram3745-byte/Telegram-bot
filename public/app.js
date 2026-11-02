@@ -1,8 +1,51 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const DEF = { base: '', key: '', model: '', system: '', temperature: 0.7, maxTokens: 2048, stream: true, speak: false, theme: 'dark' };
+  const DEF = { lang: 'fa', theme: 'system', base: '', key: '', model: '', system: '', temperature: 0.7, maxTokens: 2048, stream: true, speak: false, modelCache: [] };
   const safeParse = (s) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
+
+  const I18N = {
+    fa: {
+      newChat: '+ چت جدید', settings: 'تنظیمات', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
+      noModel: 'مدل انتخاب نشده', noChats: 'هنوز چتی نداری', welcomeTitle: 'چی توی ذهنته؟',
+      welcomeText: 'متن، عکس، فایل، صدا یا ورودی صوتی بفرست. اول آدرس API رو از تنظیمات وصل کن.',
+      placeholder: 'پیامت رو بنویس...', attach: 'ارسال فایل', mic: 'ورودی صوتی', send: 'ارسال', stop: 'توقف',
+      copy: 'کپی', read: 'خواندن', regen: 'تولید دوباره', remove: 'حذف', copied: 'کپی شد', copyFail: 'کپی نشد',
+      stopped: '(متوقف شد)', chatEmpty: 'چت خالیه', needApi: 'اول آدرس API رو وارد کن', needModel: 'یه مدل انتخاب کن',
+      noSpeech: 'مرورگرت خواندن با صدا رو نداره', noMic: 'این مرورگر ورودی صوتی نداره. Chrome، Edge یا Safari جدید رو امتحان کن.',
+      micFail: 'ورودی صوتی کار نکرد', storageFull: 'حافظه مرورگر پره. چت‌های قدیمی یا فایل‌های بزرگ رو پاک کن.',
+      tooBig: 'بزرگتر از ۳ مگابایته', unsupported: 'این نوع فایل پشتیبانی نمیشه',
+      unsupportedAudio: (n) => `[فایل صوتی ${n} با این فرمت پشتیبانی نمیشه. mp3 یا wav بفرست]`,
+      modelsFound: (n) => `${n} مدل پیدا شد`, noModels: 'مدلی پیدا نشد', noModelsLoaded: 'اول آدرس API رو وارد کن',
+      loadErr: 'خطا در گرفتن مدل‌ها', saved: 'ذخیره شد', confirmDelChat: 'این چت حذف بشه؟',
+      confirmClear: 'همه چت‌ها پاک بشن؟ این کار برگشت نداره.', sGeneral: 'عمومی', sLang: 'زبان', sTheme: 'تم',
+      themeSystem: 'سیستم', themeDark: 'تاریک', themeLight: 'روشن', sApi: 'اتصال API', sApiUrl: 'آدرس API',
+      sModel: 'مدل', sRefresh: 'بروزرسانی لیست مدل‌ها', sChat: 'تنظیمات چت', sSystem: 'System prompt',
+      sSystemPh: 'مثلاً: همیشه فارسی جواب بده', sTemp: 'خلاقیت', sMax: 'حداکثر توکن', sStream: 'پاسخ استریم (تایپ زنده)',
+      sSpeak: 'پاسخ‌ها رو با صدا بخون', sDanger: 'منطقه خطر', deleteChat: 'حذف این چت', clearAll: 'پاک کردن همه چت‌ها',
+      save: 'ذخیره', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
+    },
+    en: {
+      newChat: '+ New chat', settings: 'Settings', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
+      noModel: 'No model selected', noChats: 'No chats yet', welcomeTitle: 'What’s on your mind?',
+      welcomeText: 'Send text, images, files, audio or voice input. Connect your API URL in Settings first.',
+      placeholder: 'Type a message...', attach: 'Attach file', mic: 'Voice input', send: 'Send', stop: 'Stop',
+      copy: 'Copy', read: 'Read aloud', regen: 'Regenerate', remove: 'Delete', copied: 'Copied', copyFail: 'Copy failed',
+      stopped: '(stopped)', chatEmpty: 'This chat is empty', needApi: 'Enter your API URL first', needModel: 'Pick a model',
+      noSpeech: 'Your browser can’t read text aloud', noMic: 'This browser has no voice input. Try Chrome, Edge or recent Safari.',
+      micFail: 'Voice input failed', storageFull: 'Browser storage is full. Delete old chats or big files.',
+      tooBig: 'Over 3 MB', unsupported: 'This file type isn’t supported',
+      unsupportedAudio: (n) => `[Audio file ${n} is not supported in this format. Send mp3 or wav]`,
+      modelsFound: (n) => `${n} models found`, noModels: 'No models found', noModelsLoaded: 'Enter your API URL first',
+      loadErr: 'Could not load models', saved: 'Saved', confirmDelChat: 'Delete this chat?',
+      confirmClear: 'Delete all chats? This can’t be undone.', sGeneral: 'General', sLang: 'Language', sTheme: 'Theme',
+      themeSystem: 'System', themeDark: 'Dark', themeLight: 'Light', sApi: 'API connection', sApiUrl: 'API URL',
+      sModel: 'Model', sRefresh: 'Refresh model list', sChat: 'Chat settings', sSystem: 'System prompt',
+      sSystemPh: 'e.g. always answer in Persian', sTemp: 'Creativity', sMax: 'Max tokens', sStream: 'Stream replies (live typing)',
+      sSpeak: 'Read replies aloud', sDanger: 'Danger zone', deleteChat: 'Delete this chat', clearAll: 'Delete all chats',
+      save: 'Save', close: 'Close', hint: 'Your key and settings stay in this browser only.', hintBase: 'Empty = server default'
+    }
+  };
 
   let settings = Object.assign({}, DEF, safeParse(localStorage.getItem('cb_settings')));
   let convs = safeParse(localStorage.getItem('cb_convs')) || [];
@@ -12,28 +55,36 @@
   let busy = false;
   let abortCtrl = null;
   let rafPending = false;
+  let recog = null;
+
+  const t = (k, ...a) => {
+    const d = I18N[settings.lang] || I18N.fa;
+    const v = d[k] !== undefined ? d[k] : (I18N.en[k] !== undefined ? I18N.en[k] : k);
+    return typeof v === 'function' ? v(...a) : v;
+  };
 
   function persist() {
     try {
       localStorage.setItem('cb_settings', JSON.stringify(settings));
       localStorage.setItem('cb_convs', JSON.stringify(convs));
     } catch {
-      toast('حافظه مرورگر پره. چت‌های قدیمی یا فایل‌های بزرگ رو پاک کن.', 5000);
+      toast(t('storageFull'), 5000);
     }
   }
 
   function toast(msg, ms = 3000) {
-    const t = $('toast');
-    t.textContent = msg;
-    t.hidden = false;
-    clearTimeout(t._h);
-    t._h = setTimeout(() => { t.hidden = true; }, ms);
+    const el = $('toast');
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(el._h);
+    el._h = setTimeout(() => { el.hidden = true; }, ms);
   }
 
   function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
   function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function current() { return convs.find((c) => c.id === currentId); }
   function hasApi() { return !!(settings.base || config.hasDefaultBase); }
+  function isFa() { return settings.lang !== 'en'; }
 
   function friendly(status, text) {
     let msg = '';
@@ -49,36 +100,58 @@
     const blocks = [];
     let html = esc(text).replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
       blocks.push('<pre><code>' + code + '</code></pre>');
-      return '' + (blocks.length - 1) + '';
+      return '\u0001' + (blocks.length - 1) + '\u0001';
     });
     html = html
       .replace(/`([^`\n]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
       .replace(/^#{1,3} (.+)$/gm, '<strong>$1</strong>')
+      .replace(/^[-*] (.+)$/gm, '• $1')
       .replace(/\n/g, '<br>');
-    return html.replace(/(\d+)/g, (_, i) => blocks[i]);
+    return html.replace(/\u0001(\d+)\u0001/g, (_, i) => blocks[Number(i)]);
   }
 
-  function stripMd(t) { return String(t).replace(/```[\s\S]*?```/g, ' ').replace(/[*#`_]/g, ''); }
+  function stripMd(s) { return String(s).replace(/```[\s\S]*?```/g, ' ').replace(/[*#`_]/g, ''); }
 
   function speak(text) {
-    if (!('speechSynthesis' in window)) return toast('مرورگرت خواندن با صدا رو نداره');
+    if (!('speechSynthesis' in window)) return toast(t('noSpeech'));
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(stripMd(text));
     u.lang = /[\u0600-\u06FF]/.test(text) ? 'fa-IR' : 'en-US';
     speechSynthesis.speak(u);
   }
 
-  function copyText(t) {
-    if (!navigator.clipboard) return toast('کپی پشتیبانی نمیشه');
-    navigator.clipboard.writeText(t).then(() => toast('کپی شد'), () => toast('کپی نشد'));
+  function copyText(s) {
+    if (!navigator.clipboard) return toast(t('copyFail'));
+    navigator.clipboard.writeText(s).then(() => toast(t('copied')), () => toast(t('copyFail')));
   }
 
-  function applyTheme() { document.documentElement.dataset.theme = settings.theme || 'dark'; }
+  function applyTheme() {
+    const th = settings.theme === 'system'
+      ? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+      : settings.theme;
+    document.documentElement.dataset.theme = th;
+    document.querySelector('meta[name=theme-color]').content = th === 'light' ? '#f4f7fb' : '#0a0d14';
+  }
+
+  function applyLang() {
+    const fa = isFa();
+    document.documentElement.lang = fa ? 'fa' : 'en';
+    document.documentElement.dir = fa ? 'rtl' : 'ltr';
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+    markSeg();
+  }
+
+  function markSeg() {
+    document.querySelectorAll('#langSeg button').forEach((b) => b.classList.toggle('on', b.dataset.val === settings.lang));
+    document.querySelectorAll('#themeSeg button').forEach((b) => b.classList.toggle('on', b.dataset.val === settings.theme));
+  }
 
   // ---------- conversations ----------
   function newConv() {
-    const c = { id: uid(), title: 'چت جدید', messages: [], created: Date.now() };
+    const c = { id: uid(), title: '', messages: [], created: Date.now() };
     convs.unshift(c);
     currentId = c.id;
     persist();
@@ -87,42 +160,30 @@
   }
   function ensureConv() { return current() || newConv(); }
 
-  // ---------- rendering ----------
   function renderAll() { renderSidebar(); renderMessages(); renderTop(); renderAttachBar(); }
 
   function renderTop() {
     const c = current();
-    $('chatTitle').textContent = c ? c.title : 'چت جدید';
-    $('modelLabel').textContent = settings.model || 'مدل انتخاب نشده';
+    $('chatTitle').textContent = c && c.title ? c.title : t('untitled');
+    $('modelLabel').textContent = settings.model || t('noModel');
   }
 
   function renderSidebar() {
     const list = $('convList');
     list.innerHTML = '';
     if (!convs.length) {
-      list.innerHTML = '<div class="empty-side">هنوز چتی نداری</div>';
+      const e = document.createElement('div');
+      e.className = 'empty-side';
+      e.textContent = t('noChats');
+      list.append(e);
       return;
     }
     convs.forEach((c) => {
       const row = document.createElement('div');
       row.className = 'conv' + (c.id === currentId ? ' active' : '');
-      const t = document.createElement('button');
-      t.className = 'conv-title';
-      t.textContent = c.title;
-      t.onclick = () => { currentId = c.id; closeSide(); renderAll(); };
-      const d = document.createElement('button');
-      d.className = 'icon-btn small';
-      d.textContent = '🗑';
-      d.title = 'حذف';
-      d.onclick = (e) => {
-        e.stopPropagation();
-        if (!confirm('این چت حذف بشه؟')) return;
-        convs = convs.filter((x) => x.id !== c.id);
-        if (currentId === c.id) currentId = convs[0] ? convs[0].id : null;
-        persist();
-        renderAll();
-      };
-      row.append(t, d);
+      row.dir = 'auto';
+      row.textContent = c.title || t('untitled');
+      row.onclick = () => { currentId = c.id; closeSide(); renderAll(); };
       list.append(row);
     });
   }
@@ -165,10 +226,10 @@
         x.className = 'mini'; x.textContent = label; x.onclick = fn;
         return x;
       };
-      bar.append(mk('کپی', () => copyText(m.text || '')));
+      bar.append(mk(t('copy'), () => copyText(m.text || '')));
       if (m.role === 'assistant') {
-        bar.append(mk('🔊', () => speak(m.text || '')));
-        bar.append(mk('🔁', () => regen(i)));
+        bar.append(mk('🔊 ' + t('read'), () => speak(m.text || '')));
+        bar.append(mk('🔁 ' + t('regen'), () => regen(i)));
       }
       bar.append(mk('🗑', () => {
         const c = current();
@@ -188,7 +249,10 @@
     box.innerHTML = '';
     const c = current();
     if (!c || !c.messages.length) {
-      box.innerHTML = '<div class="welcome"><div class="logo">✦</div><h2>چی توی ذهنته؟</h2><p>متن، عکس، فایل، صدا یا ورودی صوتی بفرست. مدل و آدرس API رو از ⚙️ وصل کن.</p></div>';
+      const w = document.createElement('div');
+      w.className = 'welcome';
+      w.innerHTML = `<div class="logo">✦</div><h2>${esc(t('welcomeTitle'))}</h2><p>${esc(t('welcomeText'))}</p>`;
+      box.append(w);
       return;
     }
     c.messages.forEach((m, i) => box.append(bubble(m, i)));
@@ -252,16 +316,16 @@
     const mime = f.type || '';
     if (mime.startsWith('image/')) return { kind: 'image', name: f.name, mime: 'image/jpeg', url: await shrinkImage(f) };
     if (mime.startsWith('audio/')) {
-      if (f.size > 3 * 1024 * 1024) throw new Error('فایل صوتی بزرگتر از ۳ مگابایته');
+      if (f.size > 3 * 1024 * 1024) throw new Error(t('tooBig'));
       return { kind: 'audio', name: f.name, mime, url: await toDataURL(f) };
     }
     if (mime === 'application/pdf') {
-      if (f.size > 3 * 1024 * 1024) throw new Error('PDF بزرگتر از ۳ مگابایته');
+      if (f.size > 3 * 1024 * 1024) throw new Error(t('tooBig'));
       return { kind: 'pdf', name: f.name, mime, url: await toDataURL(f) };
     }
     const isText = mime.startsWith('text/') || /\.(md|json|csv|txt|js|ts|py|html|css|xml|ya?ml|log)$/i.test(f.name);
     if (isText) return { kind: 'text', name: f.name, mime: 'text/plain', text: (await f.text()).slice(0, 100000) };
-    throw new Error('این نوع فایل پشتیبانی نمیشه');
+    throw new Error(t('unsupported'));
   }
 
   async function handleFiles(list) {
@@ -282,26 +346,25 @@
     if (files && files.length) { e.preventDefault(); handleFiles(files); }
   });
 
-  // ---------- voice input (speech to text) ----------
+  // ---------- voice input ----------
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec = null;
   $('micBtn').onclick = () => {
-    if (!SR) return toast('این مرورگر ورودی صوتی نداره. Chrome، Edge یا Safari جدید رو امتحان کن.', 4000);
-    if (rec) { rec.stop(); return; }
-    rec = new SR();
-    rec.lang = navigator.language && navigator.language.startsWith('en') ? 'en-US' : 'fa-IR';
-    rec.interimResults = true;
-    rec.continuous = false;
+    if (!SR) return toast(t('noMic'), 4000);
+    if (recog) { recog.stop(); return; }
+    recog = new SR();
+    recog.lang = isFa() ? 'fa-IR' : 'en-US';
+    recog.interimResults = true;
+    recog.continuous = false;
     const base = $('input').value;
-    rec.onresult = (e) => {
-      let t = '';
-      for (const r of e.results) t += r[0].transcript;
-      $('input').value = (base ? base + ' ' : '') + t;
+    recog.onresult = (e) => {
+      let s = '';
+      for (const r of e.results) s += r[0].transcript;
+      $('input').value = (base ? base + ' ' : '') + s;
       autosize();
     };
-    rec.onend = () => { rec = null; $('micBtn').classList.remove('rec'); };
-    rec.onerror = () => { rec = null; $('micBtn').classList.remove('rec'); toast('ورودی صوتی کار نکرد'); };
-    rec.start();
+    recog.onend = () => { recog = null; $('micBtn').classList.remove('rec'); };
+    recog.onerror = () => { recog = null; $('micBtn').classList.remove('rec'); toast(t('micFail')); };
+    recog.start();
     $('micBtn').classList.add('rec');
   };
 
@@ -317,7 +380,7 @@
     if (!m.attachments || !m.attachments.length) return { role: m.role, content: m.text || '' };
     let text = m.text || '';
     m.attachments.filter((a) => a.kind === 'text').forEach((a) => {
-      text += `\n\n[فایل: ${a.name}]\n${a.text}`;
+      text += `\n\n[${a.name}]\n${a.text}`;
     });
     const parts = [{ type: 'text', text: text || ' ' }];
     m.attachments.forEach((a) => {
@@ -325,7 +388,7 @@
       else if (a.kind === 'audio') {
         const fmt = audioFormat(a.mime, a.name);
         if (fmt) parts.push({ type: 'input_audio', input_audio: { data: a.url.split(',')[1], format: fmt } });
-        else parts.push({ type: 'text', text: `[فایل صوتی ${a.name} با این فرمت پشتیبانی نمیشه. mp3 یا wav بفرست]` });
+        else parts.push({ type: 'text', text: t('unsupportedAudio', a.name) });
       } else if (a.kind === 'pdf') parts.push({ type: 'file', file: { filename: a.name, file_data: a.url } });
     });
     return { role: m.role, content: parts };
@@ -338,9 +401,9 @@
 
   function setSending(on) {
     const b = $('sendBtn');
-    b.textContent = on ? '■' : '➤';
     b.classList.toggle('stop', on);
-    b.title = on ? 'توقف' : 'ارسال';
+    b.innerHTML = on ? '■' : '<img src="/send.png" alt="">';
+    b.title = on ? t('stop') : t('send');
   }
 
   async function runCompletion(c, asst) {
@@ -360,13 +423,13 @@
     try {
       let res = await send(body);
       if (!res.ok) {
-        const t = await res.text();
-        if (/temperature/i.test(t) && 'temperature' in body) {
+        const txt = await res.text();
+        if (/temperature/i.test(txt) && 'temperature' in body) {
           delete body.temperature;
           res = await send(body);
           if (!res.ok) throw new Error(friendly(res.status, await res.text()));
         } else {
-          throw new Error(friendly(res.status, t));
+          throw new Error(friendly(res.status, txt));
         }
       }
 
@@ -402,9 +465,9 @@
     } catch (err) {
       asst.streaming = false;
       if (err.name === 'AbortError') {
-        asst.text = (asst.text || '') + (asst.text ? '\n\n' : '') + '(متوقف شد)';
+        asst.text = (asst.text || '') + (asst.text ? '\n\n' : '') + t('stopped');
       } else {
-        asst.text = (asst.text ? asst.text + '\n\n' : '') + '⚠️ ' + (err.message || 'خطای نامشخص');
+        asst.text = (asst.text ? asst.text + '\n\n' : '') + '⚠️ ' + (err.message || '?');
         asst.error = true;
       }
     } finally {
@@ -420,17 +483,16 @@
     if (busy) return;
     const text = (textIn || '').trim();
     if (!text && !pending.length) return;
-    if (!hasApi()) { openSettings(); toast('اول آدرس API رو وارد کن'); return; }
-    if (!settings.model) { openSettings(); toast('یه مدل انتخاب کن'); return; }
+    if (!hasApi()) { openSettings(); toast(t('needApi')); return; }
+    if (!settings.model) { openSettings(); toast(t('needModel')); return; }
 
     const c = ensureConv();
-    const userMsg = {
+    c.messages.push({
       role: 'user',
       text,
       attachments: pending.map((a) => ({ kind: a.kind, name: a.name, mime: a.mime, url: a.url, text: a.text }))
-    };
-    c.messages.push(userMsg);
-    if (c.title === 'چت جدید' && text) c.title = text.slice(0, 40);
+    });
+    if (!c.title && text) c.title = text.slice(0, 40);
     pending = [];
     $('input').value = '';
     autosize();
@@ -453,10 +515,22 @@
   }
 
   // ---------- models ----------
-  async function loadModels() {
+  function fillModels(selected) {
+    const sel = $('setModel');
+    const ids = [...new Set([...(settings.modelCache || []), selected].filter(Boolean))];
+    sel.innerHTML = '';
+    if (!ids.length) {
+      sel.add(new Option(t('noModelsLoaded'), ''));
+    } else {
+      ids.forEach((id) => sel.add(new Option(id, id)));
+    }
+    sel.value = selected || '';
+  }
+
+  async function loadModels(silent) {
     const base = $('setBase').value.trim() || settings.base;
     const key = $('setKey').value.trim() || settings.key;
-    if (!base && !config.hasDefaultBase) return toast('اول آدرس API رو وارد کن');
+    if (!base && !config.hasDefaultBase) { if (!silent) toast(t('needApi')); return; }
     try {
       const res = await post('/api/models', { base, key });
       const text = await res.text();
@@ -464,26 +538,39 @@
       const j = JSON.parse(text);
       const list = j.data || j.models || [];
       const ids = list.map((m) => (typeof m === 'string' ? m : (m.id || m.name))).filter(Boolean).sort();
-      $('modelList').innerHTML = ids.map((id) => `<option value="${esc(id)}"></option>`).join('');
-      toast(ids.length ? `${ids.length} مدل پیدا شد. از لیست انتخاب کن` : 'مدلی پیدا نشد', 3500);
+      settings.modelCache = ids;
+      persist();
+      fillModels($('setModel').value || settings.model);
+      if (!silent) toast(ids.length ? t('modelsFound', ids.length) : t('noModels'), 3000);
     } catch (e) {
-      toast('خطا در گرفتن مدل‌ها: ' + e.message, 5000);
+      if (!silent) toast(t('loadErr') + ': ' + e.message, 5000);
     }
   }
 
   // ---------- settings ----------
   function openSettings() {
     $('setBase').value = settings.base;
-    $('setBase').placeholder = config.hasDefaultBase ? 'خالی = آدرس پیش‌فرض سرور' : 'https://.../v1';
+    $('setBase').placeholder = config.hasDefaultBase ? t('hintBase') : 'https://.../v1';
     $('setKey').value = settings.key;
-    $('setModel').value = settings.model;
     $('setSystem').value = settings.system;
     $('setTemp').value = settings.temperature;
+    $('tempVal').textContent = Number(settings.temperature).toFixed(1);
     $('setMax').value = settings.maxTokens;
     $('setStream').checked = !!settings.stream;
     $('setSpeak').checked = !!settings.speak;
-    $('setTheme').value = settings.theme;
+    fillModels(settings.model);
+    markSeg();
     $('settingsModal').hidden = false;
+    if (hasApi() && !(settings.modelCache || []).length) loadModels(true);
+  }
+
+  function closeSettings() {
+    // revert unsaved language/theme changes
+    settings = Object.assign({}, DEF, safeParse(localStorage.getItem('cb_settings')));
+    applyTheme();
+    applyLang();
+    renderAll();
+    $('settingsModal').hidden = true;
   }
 
   function saveSettings() {
@@ -492,37 +579,36 @@
     settings = Object.assign({}, settings, {
       base,
       key: $('setKey').value.trim(),
-      model: $('setModel').value.trim(),
+      model: $('setModel').value || '',
       system: $('setSystem').value,
-      temperature: $('setTemp').value === '' ? 0.7 : Number($('setTemp').value),
+      temperature: Number($('setTemp').value),
       maxTokens: Number($('setMax').value) || 0,
       stream: $('setStream').checked,
-      speak: $('setSpeak').checked,
-      theme: $('setTheme').value
+      speak: $('setSpeak').checked
     });
     persist();
     applyTheme();
+    applyLang();
+    renderAll();
     $('settingsModal').hidden = true;
-    renderTop();
-    toast('ذخیره شد');
+    toast(t('saved'));
   }
 
-  // ---------- sidebar / misc ----------
   function openSide() { $('app').classList.add('side-open'); }
   function closeSide() { $('app').classList.remove('side-open'); }
 
   function autosize() {
-    const t = $('input');
-    t.style.height = 'auto';
-    t.style.height = Math.min(t.scrollHeight, 160) + 'px';
+    const el = $('input');
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
   }
 
   function exportChat() {
     const c = current();
-    if (!c || !c.messages.length) return toast('چت خالیه');
+    if (!c || !c.messages.length) return toast(t('chatEmpty'));
     const out = c.messages.map((m) => {
       const att = (m.attachments || []).map((a) => `\n\n[${a.kind}: ${a.name}]`).join('');
-      return `### ${m.role === 'user' ? 'تو' : 'AI'}\n\n${m.text || ''}${att}`;
+      return `### ${m.role === 'user' ? 'You' : 'AI'}\n\n${m.text || ''}${att}`;
     }).join('\n\n---\n\n');
     const blob = new Blob([out], { type: 'text/markdown' });
     const a = document.createElement('a');
@@ -535,21 +621,40 @@
   // ---------- wiring ----------
   $('newChat').onclick = () => { newConv(); closeSide(); };
   $('menuBtn').onclick = openSide;
-  $('closeSide').onclick = closeSide;
   $('backdrop').onclick = closeSide;
   $('exportBtn').onclick = exportChat;
   $('settingsBtn').onclick = openSettings;
   $('openSettings2').onclick = () => { closeSide(); openSettings(); };
-  $('closeSettings').onclick = () => { $('settingsModal').hidden = true; };
+  $('closeSettings').onclick = closeSettings;
   $('saveSettings').onclick = saveSettings;
-  $('loadModels').onclick = loadModels;
+  $('loadModels').onclick = () => loadModels(false);
+  $('setBase').addEventListener('change', () => { if ($('setBase').value.trim()) loadModels(true); });
+  $('setTemp').addEventListener('input', () => { $('tempVal').textContent = Number($('setTemp').value).toFixed(1); });
+  $('langSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    settings.lang = b.dataset.val; applyLang(); renderAll();
+  });
+  $('themeSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    settings.theme = b.dataset.val; applyTheme(); markSeg();
+  });
+  $('deleteChat').onclick = () => {
+    const c = current();
+    if (!c) return toast(t('chatEmpty'));
+    if (!confirm(t('confirmDelChat'))) return;
+    convs = convs.filter((x) => x.id !== c.id);
+    currentId = convs[0] ? convs[0].id : null;
+    persist();
+    $('settingsModal').hidden = true;
+    renderAll();
+  };
   $('clearAll').onclick = () => {
-    if (!confirm('همه چت‌ها پاک بشن؟ این کار برگشت نداره.')) return;
+    if (!confirm(t('confirmClear'))) return;
     convs = [];
     currentId = null;
     persist();
-    renderAll();
     $('settingsModal').hidden = true;
+    renderAll();
   };
   $('sendBtn').onclick = () => {
     if (busy) { if (abortCtrl) abortCtrl.abort(); return; }
@@ -563,10 +668,13 @@
     }
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { $('settingsModal').hidden = true; closeSide(); }
+    if (e.key === 'Escape') { if (!$('settingsModal').hidden) closeSettings(); closeSide(); }
   });
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (settings.theme === 'system') applyTheme(); });
 
   applyTheme();
+  applyLang();
+  setSending(false);
   fetch('/api/config').then((r) => r.json()).then((c) => { config = c; renderTop(); }).catch(() => {});
   renderAll();
 })();
