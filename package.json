@@ -1,0 +1,13 @@
+{
+  "name": "ai-chat-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mobile-friendly chat UI for any OpenAI-compatible API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
