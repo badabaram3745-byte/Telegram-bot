@@ -108,6 +108,9 @@
       .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
       .replace(/^#{1,3} (.+)$/gm, '<strong>$1</strong>')
       .replace(/^[-*] (.+)$/gm, '• $1')
+      .replace(/!\[([^\]]*)\]\((data:image\/[a-z.+-]+;base64,[A-Za-z0-9+/=]+|https?:\/\/[^\s)]+)\)/g, '<img class="att-img" alt="$1" src="$2">')
+      .replace(/(^|[\s>])(https?:\/\/[^\s<"]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>')
+      .replace(/\[([^\]]+)\]\((data:[^\s)]+|https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" download>$1</a>')
       .replace(/\n/g, '<br>');
     return html.replace(/\u0001(\d+)\u0001/g, (_, i) => blocks[Number(i)]);
   }
@@ -215,8 +218,9 @@
           au.controls = true; au.src = a.url;
           ad.append(au);
         } else {
-          const s = document.createElement('span');
+          const s = document.createElement(a.url ? 'a' : 'span');
           s.className = 'chip';
+          if (a.url) { s.href = a.url; s.download = a.name; }
           s.textContent = '📄 ' + a.name;
           ad.append(s);
         }
@@ -313,10 +317,8 @@
     const mime = f.type || '';
     const isImg = mime.startsWith('image/');
     const isAudio = mime.startsWith('audio/');
-    const isPdf = mime === 'application/pdf';
-    const isText = !isImg && !isAudio && !isPdf && (mime.startsWith('text/') || /\.(md|json|csv|txt|js|ts|py|html|css|xml|ya?ml|log)$/i.test(f.name));
-    if (!isImg && !isAudio && !isPdf && !isText) throw new Error(t('unsupported'));
-    if ((isAudio || isPdf) && f.size > 3 * 1024 * 1024) throw new Error(t('tooBig'));
+    const isText = !isImg && !isAudio && (mime.startsWith('text/') || /json|xml|javascript|yaml/.test(mime) || /\.(md|txt|json|csv|js|ts|jsx|tsx|py|html|css|xml|ya?ml|log|sh|sql|ini|toml|env|go|rs|java|c|cpp|h|swift|kt|rb|php)$/i.test(f.name));
+    if (!isImg && !isText && f.size > 3 * 1024 * 1024) throw new Error(t('tooBig'));
     if (isText) {
       setP(50);
       return { kind: 'text', name: f.name, mime: 'text/plain', text: (await f.text()).slice(0, 100000) };
@@ -327,7 +329,8 @@
       return { kind: 'image', name: f.name, mime: 'image/jpeg', url: await shrinkImage(dataUrl) };
     }
     setP(95);
-    return { kind: isAudio ? 'audio' : 'pdf', name: f.name, mime, url: dataUrl };
+    if (isAudio) return { kind: 'audio', name: f.name, mime, url: dataUrl };
+    return { kind: 'file', name: f.name, mime: mime || 'application/octet-stream', url: dataUrl };
   }
 
   async function handleFiles(list) {
@@ -483,7 +486,7 @@
         const fmt = audioFormat(a.mime, a.name);
         if (fmt) parts.push({ type: 'input_audio', input_audio: { data: a.url.split(',')[1], format: fmt } });
         else parts.push({ type: 'text', text: t('unsupportedAudio', a.name) });
-      } else if (a.kind === 'pdf') parts.push({ type: 'file', file: { filename: a.name, file_data: a.url } });
+      } else if (a.kind === 'pdf' || a.kind === 'file') parts.push({ type: 'file', file: { filename: a.name, file_data: a.url } });
     });
     return { role: m.role, content: parts };
   }
@@ -541,6 +544,9 @@
           const last = [...body.messages].reverse().find((m) => m.role === 'user');
           if (last) body.messages = flattenMessages([last]);
           single = true;
+        } else if (!flat && /file|pdf|input_audio|image_url|multimodal|content type|unsupported/i.test(txt) && body.messages.some((m) => Array.isArray(m.content))) {
+          body.messages = flattenMessages(body.messages);
+          flat = true;
         } else if (/must be a string/i.test(txt) && !flat) {
           body.messages = flattenMessages(body.messages);
           flat = true;
