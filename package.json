@@ -5,7 +5,8 @@
   "description": "Mobile-friendly chat UI for any OpenAI-compatible API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test test/server.test.js"
   },
   "engines": {
     "node": ">=18"
