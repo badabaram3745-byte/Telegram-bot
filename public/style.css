@@ -107,3 +107,13 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 .main{position:relative}
 .to-bottom{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:5;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:20px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
 .to-bottom[hidden]{display:none}
+
+#convSearch{width:100%;margin-top:8px;padding:9px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:14px;outline:none}
+.conv{display:flex;align-items:center;gap:4px}
+.conv .conv-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv-act{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px 4px;font-size:13px}
+.bubble pre{position:relative}
+.code-copy{position:absolute;top:6px;inset-inline-end:6px;font-size:11px;padding:2px 8px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+.tbl{overflow-x:auto;max-width:100%;margin:6px 0}
+.bubble table{border-collapse:collapse;font-size:14px}
+.bubble th,.bubble td{border:1px solid var(--line);padding:6px 8px;text-align:start}

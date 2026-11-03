@@ -1,12 +1,13 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const DEF = { lang: 'fa', theme: 'system', base: '', key: '', appPass: '', rememberKey: true, model: '', system: '', temperature: 0.7, maxTokens: 2048, stream: true, speak: false, modelCache: [] };
+  const DEF = { lang: 'fa', theme: 'system', base: '', key: '', appPass: '', rememberKey: true, model: '', system: '', temperature: 0.7, maxTokens: 2048, historyLimit: 40, syncCode: '', stream: true, speak: false, modelCache: [] };
   const safeParse = (s) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
 
   const I18N = {
     fa: {
-      newChat: '+ چت جدید', settings: 'تنظیمات', toBottom: 'برو به آخرین پیام', sRemember: 'کلید رو روی این دستگاه نگه دار', sAppPass: 'رمز ورود سایت', sAppPassPh: 'فقط اگه سرور رمز داره', needPass: 'رمز ورود لازمه یا اشتباهه. توی تنظیمات وارد کن.', sSecretWarn: 'اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار. کلید بعد از بستن مرورگر پاک میشه.', loading: 'در حال بارگذاری...', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
+      newChat: '+ چت جدید', settings: 'تنظیمات', toBottom: 'برو به آخرین پیام',
+      sHistory: 'تعداد پیام‌های آخر که فرستاده میشن (۰ = همه)', sSync: 'همگام‌سازی بین دستگاه‌ها', sSyncCode: 'کد همگام‌سازی (حداقل ۸ کاراکتر)', sSyncHint: 'همین کد رو روی دستگاه دیگه هم بذار. مثل رمز نگهش دار.', syncNow: 'همگام‌سازی الان', syncOff: 'همگام‌سازی خاموشه', syncOk: 'همگام‌سازی شد', syncFail: 'همگام‌سازی نشد', sData: 'داده‌ها', exportAll: 'خروجی کل چت‌ها', importAll: 'وارد کردن فایل پشتیبان', importDone: 'چت‌های جدید اضافه شدن', importFail: 'فایل پشتیبان معتبر نیست', rename: 'تغییر اسم', renamePrompt: 'اسم جدید چت', searchPh: 'جستجو توی چت‌ها', edit: 'ویرایش', editing: 'پیامتو ویرایش کن و بفرست. پیام‌های بعدش پاک میشن.', sRemember: 'کلید رو روی این دستگاه نگه دار', sAppPass: 'رمز ورود سایت', sAppPassPh: 'فقط اگه سرور رمز داره', needPass: 'رمز ورود لازمه یا اشتباهه. توی تنظیمات وارد کن.', sSecretWarn: 'اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار. کلید بعد از بستن مرورگر پاک میشه.', loading: 'در حال بارگذاری...', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
       noModel: 'مدل انتخاب نشده', noChats: 'هنوز چتی نداری', welcomeTitle: 'چی توی ذهنته؟',
       welcomeText: 'متن، عکس، فایل، صدا یا ورودی صوتی بفرست. اول آدرس API رو از تنظیمات وصل کن.',
       placeholder: 'پیامت رو بنویس...', attach: 'ارسال فایل', mic: 'ضبط پیام صوتی', send: 'ارسال', stop: 'توقف',
@@ -26,7 +27,8 @@
       save: 'ذخیره', recShort: 'خیلی کوتاه بود', micDenied: 'دسترسی میکروفون داده نشد', stillUploading: 'صبر کن تا فایل آپلود بشه', recStart: 'ضبط شروع شد. دوباره بزن تا تموم شه', classModel: 'این مدل فیلتر امنیتیه و برای چت نیست. یه مدل چت از لیست انتخاب کن.', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
     },
     en: {
-      newChat: '+ New chat', settings: 'Settings', toBottom: 'Jump to latest', sRemember: 'Keep the key on this device', sAppPass: 'Site password', sAppPassPh: 'Only if the server has one', needPass: 'Site password is required or wrong. Enter it in Settings.', sSecretWarn: 'If others can use this device, untick Keep so the key is cleared when the browser closes.', loading: 'Loading...', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
+      newChat: '+ New chat', settings: 'Settings', toBottom: 'Jump to latest',
+      sHistory: 'Recent messages sent (0 = all)', sSync: 'Sync across devices', sSyncCode: 'Sync code (min 8 characters)', sSyncHint: 'Use the same code on your other device. Keep it like a password.', syncNow: 'Sync now', syncOff: 'Sync is off', syncOk: 'Synced', syncFail: 'Sync failed', sData: 'Data', exportAll: 'Export all chats', importAll: 'Import backup file', importDone: 'New chats were added', importFail: 'Not a valid backup file', rename: 'Rename', renamePrompt: 'New chat name', searchPh: 'Search chats', edit: 'Edit', editing: 'Edit your message and send. Replies after it will be removed.', sRemember: 'Keep the key on this device', sAppPass: 'Site password', sAppPassPh: 'Only if the server has one', needPass: 'Site password is required or wrong. Enter it in Settings.', sSecretWarn: 'If others can use this device, untick Keep so the key is cleared when the browser closes.', loading: 'Loading...', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
       noModel: 'No model selected', noChats: 'No chats yet', welcomeTitle: 'What’s on your mind?',
       welcomeText: 'Send text, images, files, audio or voice input. Connect your API URL in Settings first.',
       placeholder: 'Type a message...', attach: 'Attach file', mic: 'Record voice message', send: 'Send', stop: 'Stop',
@@ -47,7 +49,7 @@
     }
   };
 
-  const SECRET_FIELDS = ['key', 'appPass'];
+  const SECRET_FIELDS = ['key', 'appPass', 'syncCode'];
 
   // IndexedDB: chats and attached files can be large, localStorage is only ~5MB
   const DB = (() => {
@@ -109,6 +111,7 @@
 
   let settings = loadSettings();
   let followStream = true;
+  let editIdx = null;
   let convs = [];
   let currentId = null;
   let ready = false;
@@ -133,6 +136,7 @@
     }
     if (ready) {
       DB.set('convs', convs).catch(() => toast(t('storageFull'), 5000));
+      scheduleSyncPush();
     }
   }
 
@@ -162,12 +166,36 @@
     return `HTTP ${status}: ${msg}`;
   }
 
+  function mdTables(src) {
+    const isRow = (l) => /^\s*\|.*\|\s*$/.test(l);
+    const isSep = (l) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(l);
+    const cells = (l) => l.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+    const lines = src.split('\n');
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (isRow(lines[i]) && i + 1 < lines.length && isSep(lines[i + 1])) {
+        let html = '<div class="tbl"><table><thead><tr>' + cells(lines[i]).map((c) => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+        i += 2;
+        while (i < lines.length && isRow(lines[i])) {
+          html += '<tr>' + cells(lines[i]).map((c) => `<td>${c}</td>`).join('') + '</tr>';
+          i++;
+        }
+        i--;
+        out.push(html + '</tbody></table></div>');
+      } else {
+        out.push(lines[i]);
+      }
+    }
+    return out.join('\n');
+  }
+
   function md(text) {
     const blocks = [];
     let html = esc(text).replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
       blocks.push('<pre><code>' + code + '</code></pre>');
       return '\u0001' + (blocks.length - 1) + '\u0001';
     });
+    html = mdTables(html);
     html = html
       .replace(/`([^`\n]+)`/g, '<code>$1</code>')
       .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
@@ -218,9 +246,83 @@
     document.querySelectorAll('#themeSeg button').forEach((b) => b.classList.toggle('on', b.dataset.val === settings.theme));
   }
 
+  // ---------- sync and helpers ----------
+  const tombs = () => safeParse(localStorage.getItem('cb_tombs')) || [];
+  function markDeleted(ids) {
+    localStorage.setItem('cb_tombs', JSON.stringify([...new Set([...tombs(), ...ids])].slice(-2000)));
+  }
+  let syncTimer = null;
+  function setSyncStatus(msg) { const el = $('syncStatus'); if (el) el.textContent = msg; }
+  function syncHeaders() {
+    const h = { 'x-sync-code': settings.syncCode };
+    if (settings.appPass) h['x-app-password'] = settings.appPass;
+    return h;
+  }
+  function mergeConvs(local, remote) {
+    const map = new Map(local.map((c) => [c.id, c]));
+    let changed = false;
+    remote.forEach((r) => {
+      if (!r || !r.id || !Array.isArray(r.messages)) return;
+      const l = map.get(r.id);
+      if (!l || r.messages.length > l.messages.length) { map.set(r.id, r); changed = true; }
+    });
+    const list = [...map.values()].sort((a, b) => (b.created || 0) - (a.created || 0));
+    return { list, changed };
+  }
+  function scheduleSyncPush() {
+    if (!settings.syncCode) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncPush, 3000);
+  }
+  async function syncPush() {
+    if (!settings.syncCode) return;
+    try {
+      const res = await fetch('/api/sync', {
+        method: 'PUT',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, syncHeaders()),
+        body: JSON.stringify({ updatedAt: Date.now(), data: { convs, deleted: tombs() } })
+      });
+      if (!res.ok) throw new Error(friendly(res.status, await res.text()));
+      setSyncStatus(t('syncOk') + ' · ' + fmtTime(Date.now()));
+    } catch (e) {
+      setSyncStatus(t('syncFail') + ': ' + e.message);
+    }
+  }
+  async function syncPull() {
+    if (!settings.syncCode) return;
+    try {
+      const res = await fetch('/api/sync', { headers: syncHeaders() });
+      if (res.status === 404) return syncPush();
+      if (!res.ok) throw new Error(friendly(res.status, await res.text()));
+      const remote = (await res.json()).data || {};
+      const dead = new Set([...tombs(), ...(remote.deleted || [])]);
+      markDeleted([...dead]);
+      const merged = mergeConvs(convs.filter((c) => !dead.has(c.id)), (remote.convs || []).filter((r) => r && !dead.has(r.id)));
+      if (merged.changed || merged.list.length !== convs.length) {
+        convs = merged.list;
+        if (!convs.some((c) => c.id === currentId)) currentId = convs[0] ? convs[0].id : null;
+        await DB.set('convs', convs);
+        renderAll();
+      }
+      await syncPush();
+    } catch (e) {
+      setSyncStatus(t('syncFail') + ': ' + e.message);
+    }
+  }
+  function estTokens(c) {
+    let n = 0;
+    c.messages.forEach((m) => {
+      n += (m.text || '').length;
+      (m.attachments || []).forEach((a) => { if (a.kind === 'text') n += (a.text || '').length; });
+    });
+    return Math.round(n / 3.5);
+  }
+  function fmtTokens(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : String(n); }
+
   // ---------- conversations ----------
   function newConv() {
     followStream = true;
+    editIdx = null;
     const c = { id: uid(), title: '', messages: [], created: Date.now() };
     convs.unshift(c);
     currentId = c.id;
@@ -235,7 +337,27 @@
   function renderTop() {
     const c = current();
     $('chatTitle').textContent = c && c.title ? c.title : t('untitled');
-    $('modelLabel').textContent = settings.model || t('noModel');
+    const tok = c && c.messages.length ? ' · ~' + fmtTokens(estTokens(c)) + ' tok' : '';
+    $('modelLabel').textContent = (settings.model || t('noModel')) + tok;
+  }
+
+  function renameConv(c) {
+    const v = prompt(t('renamePrompt'), c.title || '');
+    if (v === null) return;
+    const nv = v.trim().slice(0, 80);
+    if (nv) c.title = nv;
+    persist();
+    renderAll();
+  }
+
+  function deleteConv(c) {
+    if (!confirm(t('confirmDelChat'))) return;
+    markDeleted([c.id]);
+    convs = convs.filter((x) => x.id !== c.id);
+    if (currentId === c.id) currentId = convs[0] ? convs[0].id : null;
+    editIdx = null;
+    persist();
+    renderAll();
   }
 
   function renderSidebar() {
@@ -248,12 +370,28 @@
       list.append(e);
       return;
     }
-    convs.forEach((c) => {
+    const q = ($('convSearch') ? $('convSearch').value : '').trim().toLowerCase();
+    const shown = convs.filter((c) => !q
+      || (c.title || '').toLowerCase().includes(q)
+      || c.messages.some((m) => (m.text || '').toLowerCase().includes(q)));
+    shown.forEach((c) => {
       const row = document.createElement('div');
       row.className = 'conv' + (c.id === currentId ? ' active' : '');
       row.dir = 'auto';
-      row.textContent = c.title || t('untitled');
-      row.onclick = () => { currentId = c.id; followStream = true; closeSide(); renderAll(); };
+      const name = document.createElement('span');
+      name.className = 'conv-name';
+      name.textContent = c.title || t('untitled');
+      const act = (label, title, fn) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'conv-act';
+        b.title = title;
+        b.textContent = label;
+        b.onclick = (e) => { e.stopPropagation(); fn(); };
+        return b;
+      };
+      row.append(name, act('✎', t('rename'), () => renameConv(c)), act('🗑', t('deleteChat'), () => deleteConv(c)));
+      row.onclick = () => { currentId = c.id; editIdx = null; followStream = true; closeSide(); renderAll(); };
       list.append(row);
     });
   }
@@ -271,6 +409,14 @@
     b.className = 'bubble';
     b.dir = 'auto';
     b.innerHTML = md(m.text || '');
+    b.querySelectorAll('pre').forEach((pre) => {
+      const cb = document.createElement('button');
+      cb.type = 'button';
+      cb.className = 'code-copy';
+      cb.textContent = t('copy');
+      cb.onclick = () => copyText(pre.querySelector('code') ? pre.querySelector('code').textContent : pre.textContent);
+      pre.append(cb);
+    });
     if (m.attachments && m.attachments.length) {
       const ad = document.createElement('div');
       ad.className = 'att-list';
@@ -314,6 +460,7 @@
         bar.append(mk('🔊 ' + t('read'), () => speak(m.text || '')));
         bar.append(mk('🔁 ' + t('regen'), () => regen(i)));
       }
+      if (m.role === 'user') bar.append(mk('✏️ ' + t('edit'), () => startEdit(i)));
       bar.append(mk('🗑', () => {
         const c = current();
         if (!c) return;
@@ -610,7 +757,14 @@
     setSending(true);
     abortCtrl = new AbortController();
     const messages = [];
-    c.messages.filter((m) => m !== asst).forEach((m) => messages.push(toApi(m)));
+    let src = c.messages.filter((m) => m !== asst);
+    const lim = Number(settings.historyLimit);
+    if (lim > 0 && src.length > lim) {
+      src = src.slice(-lim);
+      const k = src.findIndex((m) => m.role === 'user');
+      if (k > 0) src = src.slice(k);
+    }
+    src.forEach((m) => messages.push(toApi(m)));
 
     const body = { model: settings.model, messages, stream: !!settings.stream };
     if (settings.system && settings.system.trim()) body.messages = [{ role: 'system', content: settings.system.trim() }, ...messages];
@@ -716,6 +870,10 @@
     if (!settings.model) { openSettings(); toast(t('needModel')); return; }
 
     const c = ensureConv();
+    if (editIdx !== null) {
+      if (c.messages[editIdx] && c.messages[editIdx].role === 'user') c.messages.splice(editIdx);
+      editIdx = null;
+    }
     c.messages.push({
       role: 'user',
       text,
@@ -732,6 +890,16 @@
     followStream = true;
     renderAll();
     await runCompletion(c, asst);
+  }
+
+  function startEdit(i) {
+    const c = current();
+    if (!c || !c.messages[i] || busy) return;
+    editIdx = i;
+    $('input').value = c.messages[i].text || '';
+    autosize();
+    $('input').focus();
+    toast(t('editing'), 3500);
   }
 
   async function regen(i) {
@@ -783,6 +951,8 @@
     $('setBase').value = settings.base;
     $('setBase').placeholder = config.hasDefaultBase ? t('hintBase') : 'https://.../v1';
     $('setKey').value = settings.key;
+    $('setSync').value = settings.syncCode || '';
+    $('setHistory').value = settings.historyLimit;
     $('setAppPass').value = settings.appPass || '';
     $('setRemember').checked = settings.rememberKey !== false;
     $('setSystem').value = settings.system || '';
@@ -810,10 +980,15 @@
     if (base && !/^https?:\/\//i.test(base)) base = 'https://' + base;
     const temp = Number($('setTemp').value);
     const maxT = Math.round(Number($('setMax').value));
+    const hist = Math.round(Number($('setHistory').value));
+    const prevSync = settings.syncCode;
+    const newSync = $('setSync').value.trim();
     settings = Object.assign({}, settings, {
       base,
       key: $('setKey').value.trim(),
       appPass: $('setAppPass').value.trim(),
+      syncCode: newSync,
+      historyLimit: Number.isFinite(hist) && hist >= 0 ? hist : DEF.historyLimit,
       rememberKey: $('setRemember').checked,
       system: $('setSystem').value.trim(),
       temperature: Number.isFinite(temp) ? Math.min(2, Math.max(0, temp)) : DEF.temperature,
@@ -828,6 +1003,7 @@
     renderAll();
     $('settingsModal').hidden = true;
     toast(t('saved'));
+    if (newSync && newSync !== prevSync) syncPull();
   }
 
   function openSide() { $('app').classList.add('side-open'); }
@@ -864,6 +1040,35 @@
   $('closeSettings').onclick = closeSettings;
   $('saveSettings').onclick = saveSettings;
   $('loadModels').onclick = () => loadModels(false);
+  $('syncNow').onclick = () => { if (!settings.syncCode) return toast(t('syncOff')); syncPull(); };
+  $('convSearch').addEventListener('input', renderSidebar);
+  $('exportAll').onclick = () => {
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), convs }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'aichat-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const j = JSON.parse(await f.text());
+      const incoming = Array.isArray(j) ? j : (Array.isArray(j.convs) ? j.convs : null);
+      if (!incoming) throw new Error('bad');
+      const fresh = incoming.filter((x) => x && x.id && Array.isArray(x.messages) && !convs.some((c) => c.id === x.id));
+      convs = [...fresh, ...convs];
+      if (!currentId) currentId = convs[0] ? convs[0].id : null;
+      persist();
+      renderAll();
+      toast(t('importDone'));
+    } catch {
+      toast(t('importFail'), 4000);
+    }
+  };
   $('setBase').addEventListener('change', () => { if ($('setBase').value.trim()) loadModels(true); });
   $('langSeg').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
@@ -877,6 +1082,7 @@
     const c = current();
     if (!c) return toast(t('chatEmpty'));
     if (!confirm(t('confirmDelChat'))) return;
+    markDeleted([c.id]);
     convs = convs.filter((x) => x.id !== c.id);
     currentId = convs[0] ? convs[0].id : null;
     persist();
@@ -895,6 +1101,7 @@
   };
   $('clearAll').onclick = () => {
     if (!confirm(t('confirmClear'))) return;
+    markDeleted(convs.map((c) => c.id));
     convs = [];
     currentId = null;
     persist();
@@ -942,6 +1149,7 @@
       if (config.needsPassword && !settings.appPass) toast(t('needPass'), 4000);
     } catch {}
     renderTop();
+    if (settings.syncCode) syncPull();
   }
 
   init();

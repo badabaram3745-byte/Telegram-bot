@@ -17,6 +17,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="side-head">
       <button class="new-chat" id="newChat" data-i18n="newChat">+ چت جدید</button>
+      <input id="convSearch" type="search" data-i18n-ph="searchPh" placeholder="جستجو توی چت‌ها">
     </div>
     <div class="conv-list" id="convList"></div>
     <div class="side-foot">
@@ -112,8 +113,32 @@
       <label><span data-i18n="sMax">حداکثر توکن</span>
         <input id="setMax" type="number" min="1" step="1" dir="ltr">
       </label>
+      <label><span data-i18n="sHistory">تعداد پیام‌های آخر که فرستاده میشن (۰ = همه)</span>
+        <input id="setHistory" type="number" min="0" step="1" dir="ltr">
+      </label>
       <label class="check"><input id="setStream" type="checkbox"> <span data-i18n="sStream">پاسخ استریم</span></label>
       <label class="check"><input id="setSpeak" type="checkbox"> <span data-i18n="sSpeak">پاسخ‌ها رو با صدا بخون</span></label>
+    </div>
+
+    <div class="section">
+      <h4 data-i18n="sSync">همگام‌سازی بین دستگاه‌ها</h4>
+      <label><span data-i18n="sSyncCode">کد همگام‌سازی (حداقل ۸ کاراکتر)</span>
+        <input id="setSync" type="password" dir="ltr" autocomplete="off">
+      </label>
+      <div class="row">
+        <button class="btn ghost" id="syncNow" type="button" data-i18n="syncNow">همگام‌سازی الان</button>
+      </div>
+      <div class="hint" id="syncStatus" data-i18n="syncOff">همگام‌سازی خاموشه</div>
+      <div class="hint" data-i18n="sSyncHint">همین کد رو روی دستگاه دیگه هم بذار. مثل رمز نگهش دار.</div>
+    </div>
+
+    <div class="section">
+      <h4 data-i18n="sData">داده‌ها</h4>
+      <div class="row">
+        <button class="btn ghost" id="exportAll" type="button" data-i18n="exportAll">خروجی کل چت‌ها</button>
+        <button class="btn ghost" id="importBtn" type="button" data-i18n="importAll">وارد کردن فایل پشتیبان</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
     </div>
 
     <div class="section danger-zone">
