@@ -117,3 +117,7 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 .tbl{overflow-x:auto;max-width:100%;margin:6px 0}
 .bubble table{border-collapse:collapse;font-size:14px}
 .bubble th,.bubble td{border:1px solid var(--line);padding:6px 8px;text-align:start}
+
+.mdl{font-size:11px;color:var(--muted);margin:0 4px 2px}
+.sources{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:12px}
+.sources a{color:var(--accent);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

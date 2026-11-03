@@ -7,6 +7,7 @@
   const I18N = {
     fa: {
       newChat: '+ چت جدید', settings: 'تنظیمات', toBottom: 'برو به آخرین پیام',
+      sThisChat: 'این چت', sProject: 'پروژه', sPreset: 'پریست', sChatSystem: 'دستور این چت (System prompt)', sChatModel: 'مدل این چت', useGlobal: 'همون مدل کلی', noProject: 'بدون پروژه', sProjects: 'پروژه‌ها', projNamePh: 'اسم پروژه جدید', projAdd: 'ساختن', projNeedName: 'اول یه اسم بنویس', projInstr: 'دستورالعمل پروژه (همیشه اعمال میشه)', projAddFile: 'افزودن فایل متنی', projDel: 'حذف پروژه', confirmDelProj: 'این پروژه حذف بشه؟ چت‌هاش حذف نمیشن.', projFiles: (n) => `${n} فایل`, presetNone: 'بدون پریست', presetCode: 'برنامه‌نویس', presetTrans: 'مترجم', presetWriter: 'نویسنده', presetTeacher: 'معلم', sWeb: 'جستجوی وب برای هر سوال', sCompare: 'مدل دوم برای مقایسه (خالی = خاموش)', compareOff: 'خاموش', webOff: 'سرور هنوز کلید جستجو نداره (BRAVE_API_KEY)',
       sHistory: 'تعداد پیام‌های آخر که فرستاده میشن (۰ = همه)', sSync: 'همگام‌سازی بین دستگاه‌ها', sSyncCode: 'کد همگام‌سازی (حداقل ۸ کاراکتر)', sSyncHint: 'همین کد رو روی دستگاه دیگه هم بذار. مثل رمز نگهش دار.', syncNow: 'همگام‌سازی الان', syncOff: 'همگام‌سازی خاموشه', syncOk: 'همگام‌سازی شد', syncFail: 'همگام‌سازی نشد', sData: 'داده‌ها', exportAll: 'خروجی کل چت‌ها', importAll: 'وارد کردن فایل پشتیبان', importDone: 'چت‌های جدید اضافه شدن', importFail: 'فایل پشتیبان معتبر نیست', rename: 'تغییر اسم', renamePrompt: 'اسم جدید چت', searchPh: 'جستجو توی چت‌ها', edit: 'ویرایش', editing: 'پیامتو ویرایش کن و بفرست. پیام‌های بعدش پاک میشن.', sRemember: 'کلید رو روی این دستگاه نگه دار', sAppPass: 'رمز ورود سایت', sAppPassPh: 'فقط اگه سرور رمز داره', needPass: 'رمز ورود لازمه یا اشتباهه. توی تنظیمات وارد کن.', sSecretWarn: 'اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار. کلید بعد از بستن مرورگر پاک میشه.', loading: 'در حال بارگذاری...', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
       noModel: 'مدل انتخاب نشده', noChats: 'هنوز چتی نداری', welcomeTitle: 'چی توی ذهنته؟',
       welcomeText: 'متن، عکس، فایل، صدا یا ورودی صوتی بفرست. اول آدرس API رو از تنظیمات وصل کن.',
@@ -28,6 +29,7 @@
     },
     en: {
       newChat: '+ New chat', settings: 'Settings', toBottom: 'Jump to latest',
+      sThisChat: 'This chat', sProject: 'Project', sPreset: 'Preset', sChatSystem: 'This chat instructions (system prompt)', sChatModel: 'Model for this chat', useGlobal: 'Same as global', noProject: 'No project', sProjects: 'Projects', projNamePh: 'New project name', projAdd: 'Create', projNeedName: 'Give it a name first', projInstr: 'Project instructions (always applied)', projAddFile: 'Add text file', projDel: 'Delete project', confirmDelProj: 'Delete this project? Its chats stay.', projFiles: (n) => `${n} files`, presetNone: 'No preset', presetCode: 'Programmer', presetTrans: 'Translator', presetWriter: 'Writer', presetTeacher: 'Teacher', sWeb: 'Web search for each question', sCompare: 'Second model for comparison (empty = off)', compareOff: 'Off', webOff: 'Server has no search key yet (BRAVE_API_KEY)',
       sHistory: 'Recent messages sent (0 = all)', sSync: 'Sync across devices', sSyncCode: 'Sync code (min 8 characters)', sSyncHint: 'Use the same code on your other device. Keep it like a password.', syncNow: 'Sync now', syncOff: 'Sync is off', syncOk: 'Synced', syncFail: 'Sync failed', sData: 'Data', exportAll: 'Export all chats', importAll: 'Import backup file', importDone: 'New chats were added', importFail: 'Not a valid backup file', rename: 'Rename', renamePrompt: 'New chat name', searchPh: 'Search chats', edit: 'Edit', editing: 'Edit your message and send. Replies after it will be removed.', sRemember: 'Keep the key on this device', sAppPass: 'Site password', sAppPassPh: 'Only if the server has one', needPass: 'Site password is required or wrong. Enter it in Settings.', sSecretWarn: 'If others can use this device, untick Keep so the key is cleared when the browser closes.', loading: 'Loading...', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
       noModel: 'No model selected', noChats: 'No chats yet', welcomeTitle: 'What’s on your mind?',
       welcomeText: 'Send text, images, files, audio or voice input. Connect your API URL in Settings first.',
@@ -112,6 +114,9 @@
   let settings = loadSettings();
   let followStream = true;
   let editIdx = null;
+  let projects = [];
+  let draftCfg = null;
+  let stopRequested = false;
   let convs = [];
   let currentId = null;
   let ready = false;
@@ -280,7 +285,7 @@
       const res = await fetch('/api/sync', {
         method: 'PUT',
         headers: Object.assign({ 'Content-Type': 'application/json' }, syncHeaders()),
-        body: JSON.stringify({ updatedAt: Date.now(), data: { convs, deleted: tombs() } })
+        body: JSON.stringify({ updatedAt: Date.now(), data: { convs, deleted: tombs(), projects } })
       });
       if (!res.ok) throw new Error(friendly(res.status, await res.text()));
       setSyncStatus(t('syncOk') + ' · ' + fmtTime(Date.now()));
@@ -304,11 +309,118 @@
         await DB.set('convs', convs);
         renderAll();
       }
+      const pm = new Map(projects.filter((p) => !dead.has(p.id)).map((p) => [p.id, p]));
+      let pChanged = false;
+      (remote.projects || []).forEach((p) => {
+        if (p && p.id && !dead.has(p.id) && !pm.has(p.id)) { pm.set(p.id, p); pChanged = true; }
+      });
+      if (pChanged || pm.size !== projects.length) {
+        projects = [...pm.values()];
+        await DB.set('projects', projects);
+        renderProjects();
+      }
       await syncPush();
     } catch (e) {
       setSyncStatus(t('syncFail') + ': ' + e.message);
     }
   }
+  // ---------- projects, retrieval, presets, web ----------
+  const PRESETS = {
+    '': '',
+    code: 'You are a senior software engineer. Give correct, working code with short explanations and mention assumptions.',
+    trans: 'You are a professional translator. Translate the user text accurately, keep the formatting, and output only the translation unless asked otherwise.',
+    writer: 'You are a sharp copywriter. Write clear, engaging text with concise sentences.',
+    teacher: 'You are a patient teacher. Explain step by step with simple examples and check understanding at the end.'
+  };
+  function projectOf(c) { return c && c.projectId ? (projects.find((p) => p.id === c.projectId) || null) : null; }
+  function selectedProject() { return projects.find((p) => p.id === $('projSelect').value) || null; }
+  function saveProjects() {
+    if (ready) DB.set('projects', projects).catch(() => toast(t('storageFull'), 5000));
+    scheduleSyncPush();
+  }
+  function fillSelect(sel, items, selected) {
+    sel.innerHTML = '';
+    items.forEach(([val, label]) => sel.add(new Option(label, val)));
+    sel.value = items.some(([v]) => v === selected) ? selected : items[0][0];
+  }
+  function renderProjects() {
+    const cur = $('projSelect').value;
+    const list = projects.map((p) => [p.id, p.name]);
+    fillSelect($('projSelect'), list.length ? list : [['', t('noProject')]], cur);
+    const sp = selectedProject();
+    $('projInstr').value = sp ? (sp.instructions || '') : '';
+    $('projInstr').disabled = !sp;
+    $('projInfo').textContent = sp ? t('projFiles', sp.files.length) : '';
+    const c = current() || (draftCfg ? { projectId: draftCfg.projectId } : {});
+    fillSelect($('chatProject'), [['', t('noProject')]].concat(list), (c && c.projectId) || '');
+  }
+  function fillChatSection() {
+    const c = current() || (draftCfg ? { cfg: draftCfg.cfg, projectId: draftCfg.projectId } : {});
+    const cfg = c.cfg || {};
+    $('chatSystem').value = cfg.system || '';
+    $('chatPreset').value = '';
+    const models = [['', t('useGlobal')]].concat((settings.modelCache || []).map((m) => [m, m]));
+    if (cfg.model && !models.some(([v]) => v === cfg.model)) models.push([cfg.model, cfg.model]);
+    fillSelect($('chatModel'), models, cfg.model || '');
+  }
+  function fillCompare() {
+    const items = [['', t('compareOff')]].concat((settings.modelCache || []).map((m) => [m, m]));
+    fillSelect($('setCompare'), items, settings.compareModel || '');
+  }
+  function chunkText(text, size = 900) {
+    const out = [];
+    let cur = '';
+    text.split(/\n\s*\n/).forEach((p) => {
+      if (cur && (cur + '\n\n' + p).length > size) { out.push(cur); cur = ''; }
+      cur = cur ? cur + '\n\n' + p : p;
+      while (cur.length > size * 1.5) { out.push(cur.slice(0, size)); cur = cur.slice(size); }
+    });
+    if (cur.trim()) out.push(cur);
+    return out;
+  }
+  const tokenize = (s) => s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 1);
+  function retrieveFromProject(c, query) {
+    const proj = projectOf(c);
+    if (!proj || !proj.files || !proj.files.length || !query) return '';
+    const total = proj.files.reduce((n, f) => n + f.text.length, 0);
+    if (total <= 6000) return 'Project files:\n\n' + proj.files.map((f) => `[${f.name}]\n${f.text}`).join('\n\n');
+    const chunks = [];
+    proj.files.forEach((f) => chunkText(f.text).forEach((txt) => chunks.push({ name: f.name, txt, toks: tokenize(txt) })));
+    const qToks = [...new Set(tokenize(query))];
+    const N = chunks.length;
+    const df = {};
+    qToks.forEach((q) => { df[q] = chunks.filter((ch) => ch.toks.includes(q)).length; });
+    const scored = chunks.map((ch) => {
+      let sc = 0;
+      qToks.forEach((q) => {
+        const tf = ch.toks.filter((w) => w === q).length;
+        if (tf) sc += tf * Math.log(1 + N / df[q]);
+      });
+      return { ch, sc: sc / Math.sqrt(ch.toks.length + 1) };
+    }).filter((x) => x.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, 4);
+    if (!scored.length) return '';
+    return 'Relevant excerpts from project files:\n\n' + scored.map((x) => `[${x.ch.name}]\n${x.ch.txt}`).join('\n\n');
+  }
+  async function webSearch(q) {
+    try {
+      const r = await post('/api/search', { q });
+      if (!r.ok) return [];
+      return (await r.json()).results || [];
+    } catch {
+      return [];
+    }
+  }
+  function buildSystem(c, ctx) {
+    const parts = [];
+    const proj = projectOf(c);
+    if (proj && proj.instructions && proj.instructions.trim()) parts.push(proj.instructions.trim());
+    const own = c.cfg && c.cfg.system && c.cfg.system.trim();
+    const glob = settings.system && settings.system.trim();
+    if (own) parts.push(own); else if (glob) parts.push(glob);
+    if (ctx) parts.push(ctx);
+    return parts.join('\n\n');
+  }
+
   function estTokens(c) {
     let n = 0;
     c.messages.forEach((m) => {
@@ -324,6 +436,7 @@
     followStream = true;
     editIdx = null;
     const c = { id: uid(), title: '', messages: [], created: Date.now() };
+    if (draftCfg) { c.cfg = draftCfg.cfg; c.projectId = draftCfg.projectId; draftCfg = null; }
     convs.unshift(c);
     currentId = c.id;
     persist();
@@ -405,6 +518,12 @@
   function bubble(m, i) {
     const wrap = document.createElement('div');
     wrap.className = 'msg ' + m.role;
+    if (m.model) {
+      const ml = document.createElement('div');
+      ml.className = 'mdl';
+      ml.textContent = m.model;
+      wrap.append(ml);
+    }
     const b = document.createElement('div');
     b.className = 'bubble';
     b.dir = 'auto';
@@ -441,6 +560,18 @@
     }
     if (m.streaming) b.insertAdjacentHTML('beforeend', '<span class="cursor"></span>');
     wrap.append(b);
+    if (m.sources && m.sources.length) {
+      const sd = document.createElement('div');
+      sd.className = 'sources';
+      m.sources.forEach((src) => {
+        if (!/^https?:\/\//.test(src.url || '')) return;
+        const a = document.createElement('a');
+        a.href = src.url; a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = src.title || src.url;
+        sd.append(a);
+      });
+      wrap.append(sd);
+    }
     if (m.time) {
       const st = document.createElement('div');
       st.className = 'stamp';
@@ -752,12 +883,12 @@
     });
   }
 
-  async function runCompletion(c, asst) {
+  async function runCompletion(c, asst, opts = {}) {
     busy = true;
     setSending(true);
     abortCtrl = new AbortController();
     const messages = [];
-    let src = c.messages.filter((m) => m !== asst);
+    let src = c.messages.filter((m) => !(opts.exclude || [asst]).includes(m));
     const lim = Number(settings.historyLimit);
     if (lim > 0 && src.length > lim) {
       src = src.slice(-lim);
@@ -766,8 +897,9 @@
     }
     src.forEach((m) => messages.push(toApi(m)));
 
-    const body = { model: settings.model, messages, stream: !!settings.stream };
-    if (settings.system && settings.system.trim()) body.messages = [{ role: 'system', content: settings.system.trim() }, ...messages];
+    const body = { model: opts.model || (c.cfg && c.cfg.model) || settings.model, messages, stream: !!settings.stream };
+    const sys = buildSystem(c, opts.context);
+    if (sys) body.messages = [{ role: 'system', content: sys }, ...messages];
     const temp = Number(settings.temperature);
     if (settings.temperature !== '' && Number.isFinite(temp)) body.temperature = temp;
     const maxT = Number(settings.maxTokens);
@@ -853,9 +985,8 @@
         asst.error = true;
       }
     } finally {
-      busy = false;
+      if (!opts.keepBusy) { busy = false; setSending(false); }
       abortCtrl = null;
-      setSending(false);
       persist();
       renderAll();
     }
@@ -867,7 +998,7 @@
     if (pending.some((a) => !a.done)) { toast(t('stillUploading')); return; }
     if (!text && !pending.length) return;
     if (!hasApi()) { openSettings(); toast(t('needApi')); return; }
-    if (!settings.model) { openSettings(); toast(t('needModel')); return; }
+    if (!settings.model && !((current() || {}).cfg || {}).model) { openSettings(); toast(t('needModel')); return; }
 
     const c = ensureConv();
     if (editIdx !== null) {
@@ -885,11 +1016,36 @@
     $('input').value = '';
     autosize();
 
+    stopRequested = false;
+    const primaryModel = (c.cfg && c.cfg.model) || settings.model;
+    const cmp = settings.compareModel && settings.compareModel !== primaryModel ? settings.compareModel : '';
     const asst = { role: 'assistant', text: '', streaming: true, time: Date.now() };
+    if (cmp) asst.model = primaryModel;
     c.messages.push(asst);
+    let asst2 = null;
+    if (cmp) {
+      asst2 = { role: 'assistant', text: '', streaming: true, time: Date.now(), model: cmp };
+      c.messages.push(asst2);
+    }
     followStream = true;
     renderAll();
-    await runCompletion(c, asst);
+    let ctx = retrieveFromProject(c, text);
+    if (settings.webSearch && config.searchEnabled && text) {
+      const web = await webSearch(text);
+      if (web.length) {
+        asst.sources = web.map((x) => ({ title: x.title, url: x.url }));
+        ctx += (ctx ? '\n\n' : '') + 'Web search results (cite the URLs you use):\n'
+          + web.map((x, i) => `${i + 1}. ${x.title} - ${x.url}\n   ${x.description}`).join('\n');
+      }
+    }
+    const exclude = [asst, asst2].filter(Boolean);
+    await runCompletion(c, asst, { model: primaryModel, context: ctx, exclude, keepBusy: !!asst2 });
+    if (asst2 && !stopRequested) {
+      await runCompletion(c, asst2, { model: cmp, context: ctx, exclude });
+    } else if (asst2) {
+      busy = false;
+      setSending(false);
+    }
   }
 
   function startEdit(i) {
@@ -952,6 +1108,12 @@
     $('setBase').placeholder = config.hasDefaultBase ? t('hintBase') : 'https://.../v1';
     $('setKey').value = settings.key;
     $('setSync').value = settings.syncCode || '';
+    $('setWeb').checked = !!settings.webSearch;
+    $('setWeb').disabled = !config.searchEnabled;
+    $('webHint').hidden = !!config.searchEnabled;
+    fillCompare();
+    renderProjects();
+    fillChatSection();
     $('setHistory').value = settings.historyLimit;
     $('setAppPass').value = settings.appPass || '';
     $('setRemember').checked = settings.rememberKey !== false;
@@ -983,11 +1145,24 @@
     const hist = Math.round(Number($('setHistory').value));
     const prevSync = settings.syncCode;
     const newSync = $('setSync').value.trim();
+    const cur = current();
+    const chatCfg = { system: $('chatSystem').value.trim(), model: $('chatModel').value || '' };
+    const chatProj = $('chatProject').value || null;
+    if (cur) {
+      cur.cfg = chatCfg;
+      cur.projectId = chatProj;
+    } else {
+      draftCfg = { cfg: chatCfg, projectId: chatProj };
+    }
+    const sp = selectedProject();
+    if (sp) { sp.instructions = $('projInstr').value.trim(); saveProjects(); }
     settings = Object.assign({}, settings, {
       base,
       key: $('setKey').value.trim(),
       appPass: $('setAppPass').value.trim(),
       syncCode: newSync,
+      webSearch: $('setWeb').checked && !$('setWeb').disabled,
+      compareModel: $('setCompare').value || '',
       historyLimit: Number.isFinite(hist) && hist >= 0 ? hist : DEF.historyLimit,
       rememberKey: $('setRemember').checked,
       system: $('setSystem').value.trim(),
@@ -1042,6 +1217,53 @@
   $('loadModels').onclick = () => loadModels(false);
   $('syncNow').onclick = () => { if (!settings.syncCode) return toast(t('syncOff')); syncPull(); };
   $('convSearch').addEventListener('input', renderSidebar);
+  $('projSelect').addEventListener('change', renderProjects);
+  $('projInstr').addEventListener('input', () => {
+    const sp = selectedProject();
+    if (sp) { sp.instructions = $('projInstr').value; saveProjects(); }
+  });
+  $('chatPreset').addEventListener('change', () => { $('chatSystem').value = PRESETS[$('chatPreset').value] || ''; });
+  $('projAdd').onclick = () => {
+    const name = $('projName').value.trim();
+    if (!name) return toast(t('projNeedName'));
+    const p = { id: uid(), name: name.slice(0, 60), instructions: '', files: [] };
+    projects.push(p);
+    $('projName').value = '';
+    saveProjects();
+    fillSelect($('projSelect'), projects.map((x) => [x.id, x.name]), p.id);
+    renderProjects();
+  };
+  $('projAddFile').onclick = () => {
+    if (!selectedProject()) return toast(t('projNeedName'));
+    $('projFile').click();
+  };
+  $('projFile').onchange = async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    const sp = selectedProject();
+    if (!f || !sp) return;
+    try {
+      const r = await readFile(f, () => {});
+      if (r.kind !== 'text') throw new Error('not text');
+      sp.files.push({ name: f.name, text: r.text });
+      saveProjects();
+      renderProjects();
+      toast(t('saved'));
+    } catch {
+      toast(t('unsupported'), 4000);
+    }
+  };
+  $('projDel').onclick = () => {
+    const sp = selectedProject();
+    if (!sp || !confirm(t('confirmDelProj'))) return;
+    markDeleted([sp.id]);
+    projects = projects.filter((p) => p.id !== sp.id);
+    convs.forEach((c) => { if (c.projectId === sp.id) c.projectId = null; });
+    saveProjects();
+    persist();
+    renderProjects();
+    renderAll();
+  };
   $('exportAll').onclick = () => {
     const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), convs }, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
@@ -1109,7 +1331,7 @@
     renderAll();
   };
   $('sendBtn').onclick = () => {
-    if (busy) { if (abortCtrl) abortCtrl.abort(); return; }
+    if (busy) { stopRequested = true; if (abortCtrl) abortCtrl.abort(); return; }
     send($('input').value);
   };
   $('input').addEventListener('input', autosize);
@@ -1130,6 +1352,7 @@
     setSending(false);
     try {
       convs = (await DB.get('convs')) || [];
+      projects = (await DB.get('projects')) || [];
       const legacy = safeParse(localStorage.getItem('cb_convs'));
       if (Array.isArray(legacy)) {
         if (!convs.length && legacy.length) {

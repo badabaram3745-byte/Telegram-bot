@@ -116,8 +116,55 @@
       <label><span data-i18n="sHistory">تعداد پیام‌های آخر که فرستاده میشن (۰ = همه)</span>
         <input id="setHistory" type="number" min="0" step="1" dir="ltr">
       </label>
+      <label class="check"><input id="setWeb" type="checkbox"> <span data-i18n="sWeb">جستجوی وب برای هر سوال</span></label>
+      <div class="hint" id="webHint" data-i18n="webOff" hidden>سرور هنوز کلید جستجو نداره</div>
+      <label><span data-i18n="sCompare">مدل دوم برای مقایسه (خالی = خاموش)</span>
+        <select id="setCompare" class="field" dir="ltr"></select>
+      </label>
       <label class="check"><input id="setStream" type="checkbox"> <span data-i18n="sStream">پاسخ استریم</span></label>
       <label class="check"><input id="setSpeak" type="checkbox"> <span data-i18n="sSpeak">پاسخ‌ها رو با صدا بخون</span></label>
+    </div>
+
+    <div class="section">
+      <h4 data-i18n="sThisChat">این چت</h4>
+      <label><span data-i18n="sProject">پروژه</span>
+        <select id="chatProject" class="field"></select>
+      </label>
+      <label><span data-i18n="sPreset">پریست</span>
+        <select id="chatPreset" class="field">
+          <option value="" data-i18n="presetNone">بدون پریست</option>
+          <option value="code" data-i18n="presetCode">برنامه‌نویس</option>
+          <option value="trans" data-i18n="presetTrans">مترجم</option>
+          <option value="writer" data-i18n="presetWriter">نویسنده</option>
+          <option value="teacher" data-i18n="presetTeacher">معلم</option>
+        </select>
+      </label>
+      <label><span data-i18n="sChatSystem">دستور این چت (System prompt)</span>
+        <textarea id="chatSystem" class="field" rows="3"></textarea>
+      </label>
+      <label><span data-i18n="sChatModel">مدل این چت</span>
+        <select id="chatModel" class="field" dir="ltr"></select>
+      </label>
+    </div>
+
+    <div class="section">
+      <h4 data-i18n="sProjects">پروژه‌ها</h4>
+      <label><span data-i18n="sProjects">پروژه</span>
+        <select id="projSelect" class="field"></select>
+      </label>
+      <div class="row">
+        <input id="projName" type="text" data-i18n-ph="projNamePh" placeholder="اسم پروژه جدید">
+        <button class="btn ghost" id="projAdd" type="button" data-i18n="projAdd">ساختن</button>
+      </div>
+      <label><span data-i18n="projInstr">دستورالعمل پروژه (همیشه اعمال میشه)</span>
+        <textarea id="projInstr" class="field" rows="3"></textarea>
+      </label>
+      <div class="row">
+        <button class="btn ghost" id="projAddFile" type="button" data-i18n="projAddFile">افزودن فایل متنی</button>
+        <button class="btn ghost" id="projDel" type="button" data-i18n="projDel">حذف پروژه</button>
+        <input type="file" id="projFile" accept=".txt,.md,.csv,.json,.js,.ts,.jsx,.tsx,.py,.html,.css,.xml,.yaml,.yml,.log,.sql,.sh" hidden>
+      </div>
+      <div class="hint" id="projInfo"></div>
     </div>
 
     <div class="section">
