@@ -214,3 +214,33 @@ test('rate limit returns 429 after the per-minute budget', async () => {
   assert.deepEqual(codes.slice(0, 3), [400, 400, 400]);
   assert.equal(codes[3], 429);
 });
+
+test('web search is off without a key', async () => {
+  const base = await startServer({});
+  const r = await fetch(base + '/api/search', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: 'hi' }) });
+  assert.equal(r.status, 404);
+  const c = await (await fetch(base + '/api/config')).json();
+  assert.equal(c.searchEnabled, false);
+});
+
+test('web search proxies results with the key and hides it from the client', async () => {
+  const seenHeaders = [];
+  const search = http.createServer((req, res) => {
+    seenHeaders.push(req.headers['x-subscription-token']);
+    const u = new URL(req.url, 'http://x');
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ web: { results: [{ title: 'Hit ' + u.searchParams.get('q'), url: 'https://example.com/a', description: 'desc' }] } }));
+  });
+  mocks.push(search);
+  await new Promise((r) => search.listen(0, '127.0.0.1', r));
+  const base = await startServer({ BRAVE_API_KEY: 'SECRETKEY123', SEARCH_BASE: `http://127.0.0.1:${search.address().port}/search` });
+  const r = await fetch(base + '/api/search', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q: 'cats' }) });
+  assert.equal(r.status, 200);
+  const j = await r.json();
+  assert.equal(j.results[0].title, 'Hit cats');
+  assert.equal(seenHeaders[0], 'SECRETKEY123');
+  assert.equal(JSON.stringify(j).includes('SECRETKEY123'), false);
+  const c = await (await fetch(base + '/api/config')).json();
+  assert.equal(c.searchEnabled, true);
+  assert.equal(JSON.stringify(c).includes('SECRETKEY123'), false);
+});
