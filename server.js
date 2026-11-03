@@ -15,6 +15,10 @@ const APP_PASSWORD = String(process.env.APP_PASSWORD || '').trim();
 // فقط برای توسعه/مدل لوکال (مثل localhost). روی Railway خاموش بمونه.
 const ALLOW_PRIVATE = process.env.ALLOW_PRIVATE_UPSTREAM === '1';
 const MAX_BODY = 40 * 1024 * 1024;
+// همگام‌سازی بین دستگاه‌ها: فایل‌ها اینجا ذخیره میشن (روی Railway یه Volume بذار وگرنه بعد از دیپلوی پاک میشن)
+const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
+const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MIN) || 60;
+const hits = new Map();
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -133,6 +137,22 @@ async function assertUpstreamAllowed(base) {
   if (addrs.some(isPrivateIp)) throw httpError(403, 'آدرس‌های داخلی یا لوکال مجاز نیستن');
 }
 
+// ---------- rate limit (per IP, per minute) ----------
+function clientIp(req) {
+  const xf = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return xf || req.socket.remoteAddress || 'unknown';
+}
+
+function rateOk(req) {
+  const ip = clientIp(req);
+  const now = Date.now();
+  const arr = (hits.get(ip) || []).filter((t) => now - t < 60000);
+  arr.push(now);
+  if (hits.size > 10000) hits.clear();
+  hits.set(ip, arr);
+  return arr.length <= RATE_LIMIT;
+}
+
 // ---------- auth ----------
 function checkPassword(req) {
   if (!APP_PASSWORD) return true;
@@ -218,6 +238,36 @@ async function handleChat(req, res) {
   }
 }
 
+// ---------- sync ----------
+function syncFile(code) {
+  return path.join(DATA_DIR, crypto.createHash('sha256').update(code).digest('hex') + '.json');
+}
+
+function syncCodeOf(req) {
+  const c = String(req.headers['x-sync-code'] || '').trim();
+  if (c.length < 8) throw httpError(400, 'کد همگام‌سازی حداقل ۸ کاراکتر باشه');
+  return c;
+}
+
+async function handleSyncGet(req, res) {
+  const txt = await fs.promises.readFile(syncFile(syncCodeOf(req)), 'utf8').catch(() => null);
+  if (txt === null) return sendJson(res, 404, { error: 'empty' });
+  res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(txt);
+}
+
+async function handleSyncPut(req, res) {
+  const code = syncCodeOf(req);
+  const body = await readJson(req);
+  if (!body.data || typeof body.data !== 'object' || Array.isArray(body.data)) throw httpError(400, 'data نامعتبره');
+  const text = JSON.stringify({ updatedAt: Number(body.updatedAt) || Date.now(), data: body.data });
+  await fs.promises.mkdir(DATA_DIR, { recursive: true });
+  const f = syncFile(code);
+  await fs.promises.writeFile(f + '.tmp', text);
+  await fs.promises.rename(f + '.tmp', f);
+  sendJson(res, 200, { ok: true });
+}
+
 // ---------- static ----------
 function serveStatic(req, res) {
   let urlPath;
@@ -266,6 +316,15 @@ const server = http.createServer((req, res) => {
           hasDefaultKey: !!ENV_KEY,
           needsPassword: !!APP_PASSWORD
         });
+      }
+      if (pathname.startsWith('/api/') && !rateOk(req)) {
+        return sendJson(res, 429, { error: 'خیلی سریع درخواست دادی. چند ثانیه صبر کن.' });
+      }
+      if (pathname === '/api/sync') {
+        if (!checkPassword(req)) return sendJson(res, 401, { error: 'رمز ورود اشتباهه' });
+        if (req.method === 'GET') return await handleSyncGet(req, res);
+        if (req.method === 'PUT') return await handleSyncPut(req, res);
+        return sendJson(res, 405, { error: 'method not allowed' });
       }
       if (pathname === '/api/models' || pathname === '/api/chat') {
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
