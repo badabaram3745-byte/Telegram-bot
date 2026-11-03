@@ -1,13 +1,13 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const DEF = { lang: 'fa', theme: 'system', base: '', key: '', appPass: '', rememberKey: true, model: '', system: '', temperature: 0.7, maxTokens: 2048, historyLimit: 40, syncCode: '', stream: true, speak: false, modelCache: [] };
+  const DEF = { lang: 'fa', theme: 'system', base: '', key: '', appPass: '', rememberKey: true, model: '', system: '', temperature: 0.7, maxTokens: 2048, historyLimit: 40, syncCode: '', bgFx: true, stream: true, speak: false, modelCache: [] };
   const safeParse = (s) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
 
   const I18N = {
     fa: {
       newChat: '+ چت جدید', settings: 'تنظیمات', toBottom: 'برو به آخرین پیام',
-      sThisChat: 'این چت', sProject: 'پروژه', sPreset: 'پریست', sChatSystem: 'دستور این چت (System prompt)', sChatModel: 'مدل این چت', useGlobal: 'همون مدل کلی', noProject: 'بدون پروژه', sProjects: 'پروژه‌ها', projNamePh: 'اسم پروژه جدید', projAdd: 'ساختن', projNeedName: 'اول یه اسم بنویس', projInstr: 'دستورالعمل پروژه (همیشه اعمال میشه)', projAddFile: 'افزودن فایل متنی', projDel: 'حذف پروژه', confirmDelProj: 'این پروژه حذف بشه؟ چت‌هاش حذف نمیشن.', projFiles: (n) => `${n} فایل`, presetNone: 'بدون پریست', presetCode: 'برنامه‌نویس', presetTrans: 'مترجم', presetWriter: 'نویسنده', presetTeacher: 'معلم', sWeb: 'جستجوی وب برای هر سوال', sCompare: 'مدل دوم برای مقایسه (خالی = خاموش)', compareOff: 'خاموش', webOff: 'سرور هنوز کلید جستجو نداره (BRAVE_API_KEY)',
+      sThisChat: 'این چت', sFx: 'پس‌زمینه متحرک (نور آبی و رعد)', sProject: 'پروژه', sPreset: 'پریست', sChatSystem: 'دستور این چت (System prompt)', sChatModel: 'مدل این چت', useGlobal: 'همون مدل کلی', noProject: 'بدون پروژه', sProjects: 'پروژه‌ها', projNamePh: 'اسم پروژه جدید', projAdd: 'ساختن', projNeedName: 'اول یه اسم بنویس', projInstr: 'دستورالعمل پروژه (همیشه اعمال میشه)', projAddFile: 'افزودن فایل متنی', projDel: 'حذف پروژه', confirmDelProj: 'این پروژه حذف بشه؟ چت‌هاش حذف نمیشن.', projFiles: (n) => `${n} فایل`, presetNone: 'بدون پریست', presetCode: 'برنامه‌نویس', presetTrans: 'مترجم', presetWriter: 'نویسنده', presetTeacher: 'معلم', sWeb: 'جستجوی وب برای هر سوال', sCompare: 'مدل دوم برای مقایسه (خالی = خاموش)', compareOff: 'خاموش', webOff: 'سرور هنوز کلید جستجو نداره (BRAVE_API_KEY)',
       sHistory: 'تعداد پیام‌های آخر که فرستاده میشن (۰ = همه)', sSync: 'همگام‌سازی بین دستگاه‌ها', sSyncCode: 'کد همگام‌سازی (حداقل ۸ کاراکتر)', sSyncHint: 'همین کد رو روی دستگاه دیگه هم بذار. مثل رمز نگهش دار.', syncNow: 'همگام‌سازی الان', syncOff: 'همگام‌سازی خاموشه', syncOk: 'همگام‌سازی شد', syncFail: 'همگام‌سازی نشد', sData: 'داده‌ها', exportAll: 'خروجی کل چت‌ها', importAll: 'وارد کردن فایل پشتیبان', importDone: 'چت‌های جدید اضافه شدن', importFail: 'فایل پشتیبان معتبر نیست', rename: 'تغییر اسم', renamePrompt: 'اسم جدید چت', searchPh: 'جستجو توی چت‌ها', edit: 'ویرایش', editing: 'پیامتو ویرایش کن و بفرست. پیام‌های بعدش پاک میشن.', sRemember: 'کلید رو روی این دستگاه نگه دار', sAppPass: 'رمز ورود سایت', sAppPassPh: 'فقط اگه سرور رمز داره', needPass: 'رمز ورود لازمه یا اشتباهه. توی تنظیمات وارد کن.', sSecretWarn: 'اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار. کلید بعد از بستن مرورگر پاک میشه.', loading: 'در حال بارگذاری...', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
       noModel: 'مدل انتخاب نشده', noChats: 'هنوز چتی نداری', welcomeTitle: 'چی توی ذهنته؟',
       welcomeText: 'متن، عکس، فایل، صدا یا ورودی صوتی بفرست. اول آدرس API رو از تنظیمات وصل کن.',
@@ -29,7 +29,7 @@
     },
     en: {
       newChat: '+ New chat', settings: 'Settings', toBottom: 'Jump to latest',
-      sThisChat: 'This chat', sProject: 'Project', sPreset: 'Preset', sChatSystem: 'This chat instructions (system prompt)', sChatModel: 'Model for this chat', useGlobal: 'Same as global', noProject: 'No project', sProjects: 'Projects', projNamePh: 'New project name', projAdd: 'Create', projNeedName: 'Give it a name first', projInstr: 'Project instructions (always applied)', projAddFile: 'Add text file', projDel: 'Delete project', confirmDelProj: 'Delete this project? Its chats stay.', projFiles: (n) => `${n} files`, presetNone: 'No preset', presetCode: 'Programmer', presetTrans: 'Translator', presetWriter: 'Writer', presetTeacher: 'Teacher', sWeb: 'Web search for each question', sCompare: 'Second model for comparison (empty = off)', compareOff: 'Off', webOff: 'Server has no search key yet (BRAVE_API_KEY)',
+      sThisChat: 'This chat', sFx: 'Animated background (blue light and lightning)', sProject: 'Project', sPreset: 'Preset', sChatSystem: 'This chat instructions (system prompt)', sChatModel: 'Model for this chat', useGlobal: 'Same as global', noProject: 'No project', sProjects: 'Projects', projNamePh: 'New project name', projAdd: 'Create', projNeedName: 'Give it a name first', projInstr: 'Project instructions (always applied)', projAddFile: 'Add text file', projDel: 'Delete project', confirmDelProj: 'Delete this project? Its chats stay.', projFiles: (n) => `${n} files`, presetNone: 'No preset', presetCode: 'Programmer', presetTrans: 'Translator', presetWriter: 'Writer', presetTeacher: 'Teacher', sWeb: 'Web search for each question', sCompare: 'Second model for comparison (empty = off)', compareOff: 'Off', webOff: 'Server has no search key yet (BRAVE_API_KEY)',
       sHistory: 'Recent messages sent (0 = all)', sSync: 'Sync across devices', sSyncCode: 'Sync code (min 8 characters)', sSyncHint: 'Use the same code on your other device. Keep it like a password.', syncNow: 'Sync now', syncOff: 'Sync is off', syncOk: 'Synced', syncFail: 'Sync failed', sData: 'Data', exportAll: 'Export all chats', importAll: 'Import backup file', importDone: 'New chats were added', importFail: 'Not a valid backup file', rename: 'Rename', renamePrompt: 'New chat name', searchPh: 'Search chats', edit: 'Edit', editing: 'Edit your message and send. Replies after it will be removed.', sRemember: 'Keep the key on this device', sAppPass: 'Site password', sAppPassPh: 'Only if the server has one', needPass: 'Site password is required or wrong. Enter it in Settings.', sSecretWarn: 'If others can use this device, untick Keep so the key is cleared when the browser closes.', loading: 'Loading...', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
       noModel: 'No model selected', noChats: 'No chats yet', welcomeTitle: 'What’s on your mind?',
       welcomeText: 'Send text, images, files, audio or voice input. Connect your API URL in Settings first.',
@@ -1109,6 +1109,7 @@
     $('setKey').value = settings.key;
     $('setSync').value = settings.syncCode || '';
     $('setWeb').checked = !!settings.webSearch;
+    $('setFx').checked = settings.bgFx !== false;
     $('setWeb').disabled = !config.searchEnabled;
     $('webHint').hidden = !!config.searchEnabled;
     fillCompare();
@@ -1163,6 +1164,7 @@
       syncCode: newSync,
       webSearch: $('setWeb').checked && !$('setWeb').disabled,
       compareModel: $('setCompare').value || '',
+      bgFx: $('setFx').checked,
       historyLimit: Number.isFinite(hist) && hist >= 0 ? hist : DEF.historyLimit,
       rememberKey: $('setRemember').checked,
       system: $('setSystem').value.trim(),
@@ -1175,6 +1177,7 @@
     persist();
     applyTheme();
     applyLang();
+    applyFx();
     renderAll();
     $('settingsModal').hidden = true;
     toast(t('saved'));
@@ -1203,6 +1206,185 @@
     a.download = (c.title || 'chat').replace(/[\\/:*?"<>|]/g, '_') + '.md';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // ---------- animated background: soft blue light, lightning, sparks ----------
+  const FX = (() => {
+    const cv = $('bgFx');
+    const cx = cv.getContext('2d');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    let W = 0, H = 0, dpr = 1, raf = 0, running = false, last = 0, bolt = null, nextBolt = 0, sparks = [], orbs = [];
+
+    function newSpark(s, fresh) {
+      s.x = rnd(0, W);
+      s.y = fresh ? rnd(0, H) : H + 10;
+      s.vx = rnd(-0.12, 0.12);
+      s.vy = rnd(-0.35, -0.08);
+      s.r = rnd(0.6, 1.8);
+      s.max = rnd(4, 9);
+      s.life = s.max;
+      s.ph = rnd(0, 6.28);
+      return s;
+    }
+
+    function resize() {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = window.innerWidth;
+      H = window.innerHeight;
+      cv.width = Math.round(W * dpr);
+      cv.height = Math.round(H * dpr);
+      cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const m = Math.max(W, H);
+      orbs = [
+        { bx: W * 0.15, by: H * 0.2, r: m * 0.45, c: [56, 189, 248], a: 0.16, sp: 0.00005, ph: 0 },
+        { bx: W * 0.85, by: H * 0.75, r: m * 0.5, c: [37, 99, 235], a: 0.2, sp: 0.00004, ph: 2 },
+        { bx: W * 0.5, by: H * 0.45, r: m * 0.35, c: [125, 211, 252], a: 0.08, sp: 0.00006, ph: 4 }
+      ];
+      sparks = Array.from({ length: Math.min(90, Math.round(W * H / 14000)) }, () => newSpark({}, true));
+    }
+
+    function makeBolt(x0, y0, x1, y1, depth, out) {
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      const segs = Math.max(6, Math.round(len / 26));
+      const pts = [[x0, y0]];
+      for (let i = 1; i < segs; i++) {
+        const f = i / segs;
+        const j = (1 - Math.abs(0.5 - f) * 2) * 0.16 * len + 5;
+        pts.push([x0 + (x1 - x0) * f + rnd(-j, j), y0 + (y1 - y0) * f + rnd(-j * 0.3, j * 0.3)]);
+      }
+      pts.push([x1, y1]);
+      out.push(pts);
+      if (depth > 0) {
+        for (let k = 0; k < 2; k++) {
+          if (Math.random() < 0.55) {
+            const [bx, by] = pts[1 + Math.floor(Math.random() * (pts.length - 2))];
+            const ang = Math.PI / 2 + rnd(-0.6, 0.6);
+            const bl = len * rnd(0.25, 0.5);
+            makeBolt(bx, by, bx + Math.cos(ang) * bl, by + Math.sin(ang) * bl, depth - 1, out);
+          }
+        }
+      }
+      return out;
+    }
+
+    function spawnBolt() {
+      const x0 = rnd(W * 0.15, W * 0.85);
+      const x1 = x0 + rnd(-W * 0.25, W * 0.25);
+      const y1 = H * rnd(0.35, 0.7);
+      bolt = { paths: makeBolt(x0, -10, x1, y1, 3, []), age: 0, life: rnd(0.4, 0.75) };
+    }
+
+    function stroke(pts, color, width, blur) {
+      cx.beginPath();
+      cx.moveTo(pts[0][0], pts[0][1]);
+      for (let i = 1; i < pts.length; i++) cx.lineTo(pts[i][0], pts[i][1]);
+      cx.strokeStyle = color;
+      cx.lineWidth = width;
+      cx.shadowColor = '#38bdf8';
+      cx.shadowBlur = blur;
+      cx.stroke();
+    }
+
+    function drawBolt(dt, k) {
+      bolt.age += dt;
+      const p = bolt.age / bolt.life;
+      if (p >= 1) { bolt = null; return; }
+      let a = p < 0.12 ? p / 0.12 : Math.max(0, (1 - p) / 0.88);
+      if (Math.random() < 0.3) a *= 0.35;
+      const flash = Math.max(0, 1 - p * 2.2);
+      cx.globalCompositeOperation = 'lighter';
+      cx.fillStyle = `rgba(56,189,248,${0.1 * flash * k})`;
+      cx.fillRect(0, 0, W, H);
+      cx.lineJoin = 'round';
+      cx.lineCap = 'round';
+      bolt.paths.forEach((pts, idx) => {
+        const w = idx === 0 ? 1 : 0.6;
+        stroke(pts, `rgba(56,189,248,${0.22 * a * k})`, 12 * w, 22);
+        stroke(pts, `rgba(96,165,250,${0.7 * a * k})`, 3.2 * w, 12);
+        stroke(pts, `rgba(235,248,255,${0.95 * a})`, 1.1 * w, 4);
+      });
+    }
+
+    function paint(ts, dt, animate) {
+      const k = document.documentElement.dataset.theme === 'light' ? 0.5 : 1;
+      cx.globalCompositeOperation = 'source-over';
+      cx.clearRect(0, 0, W, H);
+      cx.globalCompositeOperation = 'lighter';
+      orbs.forEach((o) => {
+        const x = o.bx + Math.sin(ts * o.sp + o.ph) * W * 0.12;
+        const y = o.by + Math.cos(ts * o.sp * 0.8 + o.ph) * H * 0.08;
+        const g = cx.createRadialGradient(x, y, 0, x, y, o.r);
+        const [r, gg, b] = o.c;
+        g.addColorStop(0, `rgba(${r},${gg},${b},${o.a * k})`);
+        g.addColorStop(0.5, `rgba(${r},${gg},${b},${o.a * 0.35 * k})`);
+        g.addColorStop(1, `rgba(${r},${gg},${b},0)`);
+        cx.fillStyle = g;
+        cx.fillRect(0, 0, W, H);
+      });
+      sparks.forEach((sp) => {
+        if (animate) {
+          sp.x += sp.vx * dt * 60;
+          sp.y += sp.vy * dt * 60;
+          sp.life -= dt;
+          if (sp.life <= 0 || sp.y < -10) newSpark(sp, false);
+        }
+        const al = Math.min(1, sp.life / sp.max) * (0.55 + 0.45 * Math.sin(ts / 260 + sp.ph)) * k;
+        cx.fillStyle = `rgba(147,197,253,${al})`;
+        cx.beginPath();
+        cx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+        cx.fill();
+      });
+      if (animate) {
+        if (!bolt && ts > nextBolt) { spawnBolt(); nextBolt = ts + rnd(3500, 8000); }
+        if (bolt) drawBolt(dt, k);
+      }
+      cx.shadowBlur = 0;
+      cx.globalCompositeOperation = 'source-over';
+    }
+
+    function frame(ts) {
+      if (!running) return;
+      raf = requestAnimationFrame(frame);
+      if (ts - last < 1000 / 30) return;
+      const dt = Math.min(0.06, (ts - last) / 1000);
+      last = ts;
+      paint(ts, dt, true);
+    }
+
+    const enabled = () => settings.bgFx !== false;
+
+    function stop() {
+      running = false;
+      cancelAnimationFrame(raf);
+      cx.clearRect(0, 0, W, H);
+    }
+
+    function start() {
+      if (!enabled()) return stop();
+      if (reduce) { paint(0, 0, false); return; }
+      if (running || document.hidden) return;
+      running = true;
+      last = performance.now();
+      nextBolt = last + 1200;
+      raf = requestAnimationFrame(frame);
+    }
+
+    resize();
+    window.addEventListener('resize', () => {
+      resize();
+      if (reduce && enabled()) paint(0, 0, false);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { running = false; cancelAnimationFrame(raf); } else start();
+    });
+    return { start, stop };
+  })();
+
+  function applyFx() {
+    const on = settings.bgFx !== false;
+    document.documentElement.classList.toggle('fx', on);
+    if (on) FX.start(); else FX.stop();
   }
 
   // ---------- wiring ----------
@@ -1350,6 +1532,7 @@
     applyTheme();
     applyLang();
     setSending(false);
+    applyFx();
     try {
       convs = (await DB.get('convs')) || [];
       projects = (await DB.get('projects')) || [];

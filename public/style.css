@@ -121,3 +121,13 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 .mdl{font-size:11px;color:var(--muted);margin:0 4px 2px}
 .sources{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:12px}
 .sources a{color:var(--accent);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+#bgFx{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;pointer-events:none;display:none}
+html.fx #bgFx{display:block}
+html.fx{background:var(--bg)}
+html.fx body{background:transparent}
+html.fx .app{z-index:1}
+html.fx .topbar,html.fx .composer{background:rgba(10,13,20,.5);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+html.fx .sidebar{background:rgba(17,24,39,.66);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+html.fx[data-theme=light] .topbar,html.fx[data-theme=light] .composer{background:rgba(244,247,251,.55)}
+html.fx[data-theme=light] .sidebar{background:rgba(255,255,255,.66)}
