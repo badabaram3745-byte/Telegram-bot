@@ -19,6 +19,9 @@ const MAX_BODY = 40 * 1024 * 1024;
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
 const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MIN) || 60;
 const hits = new Map();
+// جستجوی وب (اختیاری): با BRAVE_API_KEY فعال میشه. SEARCH_BASE فقط برای تست.
+const SEARCH_KEY = String(process.env.BRAVE_API_KEY || '').trim();
+const SEARCH_BASE = process.env.SEARCH_BASE || 'https://api.search.brave.com/res/v1/web/search';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -268,6 +271,30 @@ async function handleSyncPut(req, res) {
   sendJson(res, 200, { ok: true });
 }
 
+// ---------- web search ----------
+async function handleSearch(req, res) {
+  const body = await readJson(req);
+  const q = String(body.q || '').trim().slice(0, 300);
+  if (!q) throw httpError(400, 'سوال خالیه');
+  if (!SEARCH_KEY) throw httpError(404, 'جستجوی وب روی سرور فعال نیست');
+  const u = new URL(SEARCH_BASE);
+  u.searchParams.set('q', q);
+  u.searchParams.set('count', '5');
+  const r = await fetch(u, {
+    headers: { 'X-Subscription-Token': SEARCH_KEY, Accept: 'application/json' },
+    redirect: 'error',
+    signal: AbortSignal.timeout(15000)
+  });
+  if (!r.ok) throw httpError(502, 'جستجو جواب نداد');
+  const j = await r.json();
+  const results = ((j.web && j.web.results) || []).slice(0, 5).map((x) => ({
+    title: String(x.title || ''),
+    url: String(x.url || ''),
+    description: String(x.description || '')
+  }));
+  sendJson(res, 200, { results });
+}
+
 // ---------- static ----------
 function serveStatic(req, res) {
   let urlPath;
@@ -314,7 +341,8 @@ const server = http.createServer((req, res) => {
         return sendJson(res, 200, {
           hasDefaultBase: !!ENV_BASE,
           hasDefaultKey: !!ENV_KEY,
-          needsPassword: !!APP_PASSWORD
+          needsPassword: !!APP_PASSWORD,
+          searchEnabled: !!SEARCH_KEY
         });
       }
       if (pathname.startsWith('/api/') && !rateOk(req)) {
@@ -325,6 +353,11 @@ const server = http.createServer((req, res) => {
         if (req.method === 'GET') return await handleSyncGet(req, res);
         if (req.method === 'PUT') return await handleSyncPut(req, res);
         return sendJson(res, 405, { error: 'method not allowed' });
+      }
+      if (pathname === '/api/search') {
+        if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
+        if (!checkPassword(req)) return sendJson(res, 401, { error: 'رمز ورود اشتباهه' });
+        return await handleSearch(req, res);
       }
       if (pathname === '/api/models' || pathname === '/api/chat') {
         if (req.method !== 'POST') return sendJson(res, 405, { error: 'method not allowed' });
