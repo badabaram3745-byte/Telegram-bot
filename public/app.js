@@ -1,12 +1,12 @@
 (() => {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const DEF = { lang: 'fa', theme: 'system', base: '', key: '', model: '', system: '', temperature: 0.7, maxTokens: 2048, stream: true, speak: false, modelCache: [] };
+  const DEF = { lang: 'fa', theme: 'system', base: '', key: '', appPass: '', rememberKey: true, model: '', system: '', temperature: 0.7, maxTokens: 2048, stream: true, speak: false, modelCache: [] };
   const safeParse = (s) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
 
   const I18N = {
     fa: {
-      newChat: '+ چت جدید', settings: 'تنظیمات', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
+      newChat: '+ چت جدید', settings: 'تنظیمات', sRemember: 'کلید رو روی این دستگاه نگه دار', sAppPass: 'رمز ورود سایت', sAppPassPh: 'فقط اگه سرور رمز داره', needPass: 'رمز ورود لازمه یا اشتباهه. توی تنظیمات وارد کن.', sSecretWarn: 'اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار. کلید بعد از بستن مرورگر پاک میشه.', loading: 'در حال بارگذاری...', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
       noModel: 'مدل انتخاب نشده', noChats: 'هنوز چتی نداری', welcomeTitle: 'چی توی ذهنته؟',
       welcomeText: 'متن، عکس، فایل، صدا یا ورودی صوتی بفرست. اول آدرس API رو از تنظیمات وصل کن.',
       placeholder: 'پیامت رو بنویس...', attach: 'ارسال فایل', mic: 'ضبط پیام صوتی', send: 'ارسال', stop: 'توقف',
@@ -26,7 +26,7 @@
       save: 'ذخیره', recShort: 'خیلی کوتاه بود', micDenied: 'دسترسی میکروفون داده نشد', stillUploading: 'صبر کن تا فایل آپلود بشه', recStart: 'ضبط شروع شد. دوباره بزن تا تموم شه', classModel: 'این مدل فیلتر امنیتیه و برای چت نیست. یه مدل چت از لیست انتخاب کن.', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
     },
     en: {
-      newChat: '+ New chat', settings: 'Settings', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
+      newChat: '+ New chat', settings: 'Settings', sRemember: 'Keep the key on this device', sAppPass: 'Site password', sAppPassPh: 'Only if the server has one', needPass: 'Site password is required or wrong. Enter it in Settings.', sSecretWarn: 'If others can use this device, untick Keep so the key is cleared when the browser closes.', loading: 'Loading...', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
       noModel: 'No model selected', noChats: 'No chats yet', welcomeTitle: 'What’s on your mind?',
       welcomeText: 'Send text, images, files, audio or voice input. Connect your API URL in Settings first.',
       placeholder: 'Type a message...', attach: 'Attach file', mic: 'Record voice message', send: 'Send', stop: 'Stop',
@@ -47,9 +47,70 @@
     }
   };
 
-  let settings = Object.assign({}, DEF, safeParse(localStorage.getItem('cb_settings')));
-  let convs = safeParse(localStorage.getItem('cb_convs')) || [];
-  let currentId = convs[0] ? convs[0].id : null;
+  const SECRET_FIELDS = ['key', 'appPass'];
+
+  // IndexedDB: chats and attached files can be large, localStorage is only ~5MB
+  const DB = (() => {
+    let dbp = null;
+    const open = () => {
+      if (!dbp) {
+        dbp = new Promise((res, rej) => {
+          const r = indexedDB.open('aichat', 1);
+          r.onupgradeneeded = () => r.result.createObjectStore('kv');
+          r.onsuccess = () => res(r.result);
+          r.onerror = () => rej(r.error);
+        });
+      }
+      return dbp;
+    };
+    return {
+      async get(k) {
+        const db = await open();
+        return new Promise((res, rej) => {
+          const q = db.transaction('kv').objectStore('kv').get(k);
+          q.onsuccess = () => res(q.result);
+          q.onerror = () => rej(q.error);
+        });
+      },
+      async set(k, v) {
+        const db = await open();
+        return new Promise((res, rej) => {
+          const tx = db.transaction('kv', 'readwrite');
+          tx.objectStore('kv').put(v, k);
+          tx.oncomplete = () => res();
+          tx.onerror = () => rej(tx.error);
+          tx.onabort = () => rej(tx.error || new Error('abort'));
+        });
+      }
+    };
+  })();
+
+  function loadSettings() {
+    const s = Object.assign({}, DEF, safeParse(localStorage.getItem('cb_settings')));
+    if (!s.rememberKey) {
+      const sess = safeParse(sessionStorage.getItem('cb_secrets')) || {};
+      SECRET_FIELDS.forEach((f) => { s[f] = sess[f] || ''; });
+    }
+    return s;
+  }
+
+  function saveSettingsStore() {
+    const pub = Object.assign({}, settings);
+    const secrets = {};
+    SECRET_FIELDS.forEach((f) => { secrets[f] = pub[f] || ''; delete pub[f]; });
+    if (settings.rememberKey) {
+      localStorage.setItem('cb_settings', JSON.stringify(Object.assign(pub, secrets)));
+      sessionStorage.removeItem('cb_secrets');
+    } else {
+      localStorage.setItem('cb_settings', JSON.stringify(pub));
+      sessionStorage.setItem('cb_secrets', JSON.stringify(secrets));
+    }
+  }
+
+  let settings = loadSettings();
+  let convs = [];
+  let currentId = null;
+  let ready = false;
   let config = { hasDefaultBase: false, hasDefaultKey: false };
   let pending = [];
   let busy = false;
@@ -65,10 +126,12 @@
 
   function persist() {
     try {
-      localStorage.setItem('cb_settings', JSON.stringify(settings));
-      localStorage.setItem('cb_convs', JSON.stringify(convs));
+      saveSettingsStore();
     } catch {
       toast(t('storageFull'), 5000);
+    }
+    if (ready) {
+      DB.set('convs', convs).catch(() => toast(t('storageFull'), 5000));
     }
   }
 
@@ -87,6 +150,7 @@
   function isFa() { return settings.lang !== 'en'; }
 
   function friendly(status, text) {
+    if (status === 401) return t('needPass');
     if (/classification/i.test(String(text))) return t('classModel');
     let msg = '';
     try {
@@ -492,8 +556,11 @@
   }
 
   // ---------- completion ----------
-  function post(path, payload, signal) {
-    return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal });
+  function post(path, payload, signal, pass) {
+    const headers = { 'Content-Type': 'application/json' };
+    const p = pass !== undefined ? pass : settings.appPass;
+    if (p) headers['x-app-password'] = p;
+    return fetch(path, { method: 'POST', headers, body: JSON.stringify(payload), signal });
   }
 
   function setSending(on) {
@@ -522,6 +589,11 @@
     c.messages.filter((m) => m !== asst).forEach((m) => messages.push(toApi(m)));
 
     const body = { model: settings.model, messages, stream: !!settings.stream };
+    if (settings.system && settings.system.trim()) body.messages = [{ role: 'system', content: settings.system.trim() }, ...messages];
+    const temp = Number(settings.temperature);
+    if (settings.temperature !== '' && Number.isFinite(temp)) body.temperature = temp;
+    const maxT = Number(settings.maxTokens);
+    if (Number.isFinite(maxT) && maxT > 0) body.max_tokens = Math.round(maxT);
 
     const send = (b) => post('/api/chat', { base: settings.base, key: settings.key, payload: b }, abortCtrl.signal);
 
@@ -542,7 +614,7 @@
           body.stream = false;
         } else if (/single user message/i.test(txt) && !single) {
           const last = [...body.messages].reverse().find((m) => m.role === 'user');
-          if (last) body.messages = flattenMessages([last]);
+          if (last) body.messages = [...body.messages.filter((m) => m.role === 'system'), ...flattenMessages([last])];
           single = true;
         } else if (!flat && /file|pdf|input_audio|image_url|multimodal|content type|unsupported/i.test(txt) && body.messages.some((m) => Array.isArray(m.content))) {
           body.messages = flattenMessages(body.messages);
@@ -604,7 +676,7 @@
   }
 
   async function send(textIn) {
-    if (busy) return;
+    if (busy || !ready) return;
     const text = (textIn || '').trim();
     if (pending.some((a) => !a.done)) { toast(t('stillUploading')); return; }
     if (!text && !pending.length) return;
@@ -658,7 +730,7 @@
     const key = $('setKey').value.trim() || settings.key;
     if (!base && !config.hasDefaultBase) { if (!silent) toast(t('needApi')); return; }
     try {
-      const res = await post('/api/models', { base, key });
+      const res = await post('/api/models', { base, key }, undefined, $('setAppPass').value.trim() || settings.appPass);
       const text = await res.text();
       if (!res.ok) throw new Error(friendly(res.status, text));
       const j = JSON.parse(text);
@@ -678,6 +750,11 @@
     $('setBase').value = settings.base;
     $('setBase').placeholder = config.hasDefaultBase ? t('hintBase') : 'https://.../v1';
     $('setKey').value = settings.key;
+    $('setAppPass').value = settings.appPass || '';
+    $('setRemember').checked = settings.rememberKey !== false;
+    $('setSystem').value = settings.system || '';
+    $('setTemp').value = settings.temperature;
+    $('setMax').value = settings.maxTokens;
     $('setStream').checked = !!settings.stream;
     $('setSpeak').checked = !!settings.speak;
     fillModels(settings.model);
@@ -688,7 +765,7 @@
 
   function closeSettings() {
     // revert unsaved language/theme changes
-    settings = Object.assign({}, DEF, safeParse(localStorage.getItem('cb_settings')));
+    settings = loadSettings();
     applyTheme();
     applyLang();
     renderAll();
@@ -698,9 +775,16 @@
   function saveSettings() {
     let base = $('setBase').value.trim().replace(/\/+$/, '');
     if (base && !/^https?:\/\//i.test(base)) base = 'https://' + base;
+    const temp = Number($('setTemp').value);
+    const maxT = Math.round(Number($('setMax').value));
     settings = Object.assign({}, settings, {
       base,
       key: $('setKey').value.trim(),
+      appPass: $('setAppPass').value.trim(),
+      rememberKey: $('setRemember').checked,
+      system: $('setSystem').value.trim(),
+      temperature: Number.isFinite(temp) ? Math.min(2, Math.max(0, temp)) : DEF.temperature,
+      maxTokens: Number.isFinite(maxT) && maxT > 0 ? maxT : DEF.maxTokens,
       model: $('setModel').value || '',
       stream: $('setStream').checked,
       speak: $('setSpeak').checked
@@ -738,7 +822,7 @@
   }
 
   // ---------- wiring ----------
-  $('newChat').onclick = () => { newConv(); closeSide(); };
+  $('newChat').onclick = () => { if (!ready) return; newConv(); closeSide(); };
   $('menuBtn').onclick = openSide;
   $('backdrop').onclick = closeSide;
   $('exportBtn').onclick = exportChat;
@@ -800,9 +884,32 @@
   });
   matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (settings.theme === 'system') applyTheme(); });
 
-  applyTheme();
-  applyLang();
-  setSending(false);
-  fetch('/api/config').then((r) => r.json()).then((c) => { config = c; renderTop(); }).catch(() => {});
-  renderAll();
+  async function init() {
+    applyTheme();
+    applyLang();
+    setSending(false);
+    try {
+      convs = (await DB.get('convs')) || [];
+      const legacy = safeParse(localStorage.getItem('cb_convs'));
+      if (Array.isArray(legacy)) {
+        if (!convs.length && legacy.length) {
+          convs = legacy;
+          await DB.set('convs', convs);
+        }
+        localStorage.removeItem('cb_convs');
+      }
+    } catch {
+      toast(t('storageFull'), 5000);
+    }
+    currentId = convs[0] ? convs[0].id : null;
+    ready = true;
+    renderAll();
+    try {
+      config = await fetch('/api/config').then((r) => r.json());
+      if (config.needsPassword && !settings.appPass) toast(t('needPass'), 4000);
+    } catch {}
+    renderTop();
+  }
+
+  init();
 })();

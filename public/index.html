@@ -85,7 +85,12 @@
         <input id="setBase" type="text" dir="ltr" placeholder="https://.../v1">
       </label>
       <label><span>API Key</span>
-        <input id="setKey" type="password" dir="ltr" placeholder="sk-...">
+        <input id="setKey" type="password" dir="ltr" placeholder="sk-..." autocomplete="off">
+      </label>
+      <label class="check"><input id="setRemember" type="checkbox"> <span data-i18n="sRemember">کلید رو روی این دستگاه نگه دار</span></label>
+      <div class="hint" data-i18n="sSecretWarn">اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار.</div>
+      <label><span data-i18n="sAppPass">رمز ورود سایت</span>
+        <input id="setAppPass" type="password" dir="ltr" data-i18n-ph="sAppPassPh" autocomplete="off">
       </label>
       <label><span data-i18n="sModel">مدل</span>
         <div class="row">
@@ -97,6 +102,15 @@
 
     <div class="section">
       <h4 data-i18n="sChat">تنظیمات چت</h4>
+      <label><span data-i18n="sSystem">System prompt</span>
+        <textarea id="setSystem" class="field" rows="3" data-i18n-ph="sSystemPh"></textarea>
+      </label>
+      <label><span data-i18n="sTemp">خلاقیت</span>
+        <input id="setTemp" type="number" min="0" max="2" step="0.1" dir="ltr">
+      </label>
+      <label><span data-i18n="sMax">حداکثر توکن</span>
+        <input id="setMax" type="number" min="1" step="1" dir="ltr">
+      </label>
       <label class="check"><input id="setStream" type="checkbox"> <span data-i18n="sStream">پاسخ استریم</span></label>
       <label class="check"><input id="setSpeak" type="checkbox"> <span data-i18n="sSpeak">پاسخ‌ها رو با صدا بخون</span></label>
     </div>
