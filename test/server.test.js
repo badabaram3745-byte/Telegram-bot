@@ -5,6 +5,8 @@ const http = require('http');
 const net = require('net');
 const path = require('path');
 const { spawn } = require('child_process');
+const fs = require('fs');
+const os = require('os');
 
 const { isPrivateIp, normalizeBase } = require('../server.js');
 
@@ -64,6 +66,7 @@ async function startServer(env = {}) {
       API_KEY: '',
       APP_PASSWORD: '',
       ALLOW_PRIVATE_UPSTREAM: '',
+      DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'aichat-test-')),
       ...env
     },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -178,4 +181,36 @@ test('bad JSON gives a clean 400, not a crash', async () => {
   assert.equal(r.status, 400);
   const again = await fetch(base + '/healthz');
   assert.equal(again.status, 200);
+});
+
+test('sync stores and returns the blob, and rejects short codes', async () => {
+  const base = await startServer({});
+  const code = 'abcdefgh123';
+  const put = await fetch(base + '/api/sync', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json', 'x-sync-code': code },
+    body: JSON.stringify({ updatedAt: 1, data: { convs: [{ id: 'x', messages: [] }], deleted: [] } })
+  });
+  assert.equal(put.status, 200);
+  const get = await fetch(base + '/api/sync', { headers: { 'x-sync-code': code } });
+  assert.equal(get.status, 200);
+  assert.equal((await get.json()).data.convs[0].id, 'x');
+  assert.equal((await fetch(base + '/api/sync', { headers: { 'x-sync-code': 'short' } })).status, 400);
+  assert.equal((await fetch(base + '/api/sync', { headers: { 'x-sync-code': 'zzzzzzzzzz' } })).status, 404);
+});
+
+test('sync needs the site password when one is set', async () => {
+  const base = await startServer({ APP_PASSWORD: 'pw' });
+  const r = await fetch(base + '/api/sync', { headers: { 'x-sync-code': 'abcdefgh123' } });
+  assert.equal(r.status, 401);
+});
+
+test('rate limit returns 429 after the per-minute budget', async () => {
+  const base = await startServer({ RATE_LIMIT_PER_MIN: '3' });
+  const codes = [];
+  for (let i = 0; i < 4; i++) {
+    codes.push((await fetch(base + '/api/models', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status);
+  }
+  assert.deepEqual(codes.slice(0, 3), [400, 400, 400]);
+  assert.equal(codes[3], 429);
 });
