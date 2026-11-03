@@ -6,7 +6,7 @@
 
   const I18N = {
     fa: {
-      newChat: '+ چت جدید', settings: 'تنظیمات', sRemember: 'کلید رو روی این دستگاه نگه دار', sAppPass: 'رمز ورود سایت', sAppPassPh: 'فقط اگه سرور رمز داره', needPass: 'رمز ورود لازمه یا اشتباهه. توی تنظیمات وارد کن.', sSecretWarn: 'اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار. کلید بعد از بستن مرورگر پاک میشه.', loading: 'در حال بارگذاری...', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
+      newChat: '+ چت جدید', settings: 'تنظیمات', toBottom: 'برو به آخرین پیام', sRemember: 'کلید رو روی این دستگاه نگه دار', sAppPass: 'رمز ورود سایت', sAppPassPh: 'فقط اگه سرور رمز داره', needPass: 'رمز ورود لازمه یا اشتباهه. توی تنظیمات وارد کن.', sSecretWarn: 'اگه غیر از خودت کسی به این دستگاه دسترسی داره، تیک «نگه دار» رو بردار. کلید بعد از بستن مرورگر پاک میشه.', loading: 'در حال بارگذاری...', export: 'خروجی گرفتن', menu: 'منو', untitled: 'چت جدید',
       noModel: 'مدل انتخاب نشده', noChats: 'هنوز چتی نداری', welcomeTitle: 'چی توی ذهنته؟',
       welcomeText: 'متن، عکس، فایل، صدا یا ورودی صوتی بفرست. اول آدرس API رو از تنظیمات وصل کن.',
       placeholder: 'پیامت رو بنویس...', attach: 'ارسال فایل', mic: 'ضبط پیام صوتی', send: 'ارسال', stop: 'توقف',
@@ -26,7 +26,7 @@
       save: 'ذخیره', recShort: 'خیلی کوتاه بود', micDenied: 'دسترسی میکروفون داده نشد', stillUploading: 'صبر کن تا فایل آپلود بشه', recStart: 'ضبط شروع شد. دوباره بزن تا تموم شه', classModel: 'این مدل فیلتر امنیتیه و برای چت نیست. یه مدل چت از لیست انتخاب کن.', resetSettings: 'بازگشت به تنظیمات اولیه', confirmReset: 'همه تنظیمات (آدرس API، کلید، زبان، تم) به حالت اول برگرده؟ چت‌ها پاک نمیشن.', resetDone: 'تنظیمات به حالت اول برگشت', close: 'بستن', hint: 'کلید و تنظیمات فقط داخل همین مرورگر ذخیره میشن.', hintBase: 'خالی = آدرس پیش‌فرض سرور'
     },
     en: {
-      newChat: '+ New chat', settings: 'Settings', sRemember: 'Keep the key on this device', sAppPass: 'Site password', sAppPassPh: 'Only if the server has one', needPass: 'Site password is required or wrong. Enter it in Settings.', sSecretWarn: 'If others can use this device, untick Keep so the key is cleared when the browser closes.', loading: 'Loading...', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
+      newChat: '+ New chat', settings: 'Settings', toBottom: 'Jump to latest', sRemember: 'Keep the key on this device', sAppPass: 'Site password', sAppPassPh: 'Only if the server has one', needPass: 'Site password is required or wrong. Enter it in Settings.', sSecretWarn: 'If others can use this device, untick Keep so the key is cleared when the browser closes.', loading: 'Loading...', export: 'Export chat', menu: 'Menu', untitled: 'New chat',
       noModel: 'No model selected', noChats: 'No chats yet', welcomeTitle: 'What’s on your mind?',
       welcomeText: 'Send text, images, files, audio or voice input. Connect your API URL in Settings first.',
       placeholder: 'Type a message...', attach: 'Attach file', mic: 'Record voice message', send: 'Send', stop: 'Stop',
@@ -108,6 +108,7 @@
   }
 
   let settings = loadSettings();
+  let followStream = true;
   let convs = [];
   let currentId = null;
   let ready = false;
@@ -219,6 +220,7 @@
 
   // ---------- conversations ----------
   function newConv() {
+    followStream = true;
     const c = { id: uid(), title: '', messages: [], created: Date.now() };
     convs.unshift(c);
     currentId = c.id;
@@ -251,7 +253,7 @@
       row.className = 'conv' + (c.id === currentId ? ' active' : '');
       row.dir = 'auto';
       row.textContent = c.title || t('untitled');
-      row.onclick = () => { currentId = c.id; closeSide(); renderAll(); };
+      row.onclick = () => { currentId = c.id; followStream = true; closeSide(); renderAll(); };
       list.append(row);
     });
   }
@@ -324,9 +326,18 @@
     return wrap;
   }
 
+  function isNearBottom() {
+    const b = $('messages');
+    return b.scrollHeight - b.scrollTop - b.clientHeight < 120;
+  }
+
+  function updateToBottom() {
+    $('toBottom').hidden = isNearBottom();
+  }
+
   function renderMessages() {
     const box = $('messages');
-    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+    const prevTop = box.scrollTop;
     box.innerHTML = '';
     const c = current();
     if (!c || !c.messages.length) {
@@ -334,11 +345,24 @@
       w.className = 'welcome';
       w.innerHTML = `<div class="logo">✦</div><h2>${esc(t('welcomeTitle'))}</h2><p>${esc(t('welcomeText'))}</p>`;
       box.append(w);
-      return;
+    } else {
+      c.messages.forEach((m, i) => box.append(bubble(m, i)));
+      // keep following the reply only if the user is at the bottom, otherwise keep their place
+      box.scrollTop = followStream ? box.scrollHeight : prevTop;
     }
-    c.messages.forEach((m, i) => box.append(bubble(m, i)));
-    if (nearBottom) box.scrollTop = box.scrollHeight;
+    updateToBottom();
   }
+
+  $('messages').addEventListener('scroll', () => {
+    followStream = isNearBottom();
+    updateToBottom();
+  });
+
+  $('toBottom').onclick = () => {
+    followStream = true;
+    const b = $('messages');
+    b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' });
+  };
 
   function scheduleRender() {
     if (rafPending) return;
@@ -593,7 +617,10 @@
     const temp = Number(settings.temperature);
     if (settings.temperature !== '' && Number.isFinite(temp)) body.temperature = temp;
     const maxT = Number(settings.maxTokens);
-    if (Number.isFinite(maxT) && maxT > 0) body.max_tokens = Math.round(maxT);
+    if (Number.isFinite(maxT) && maxT > 0) {
+      if (settings.useMaxCompletion) body.max_completion_tokens = Math.round(maxT);
+      else body.max_tokens = Math.round(maxT);
+    }
 
     const send = (b) => post('/api/chat', { base: settings.base, key: settings.key, payload: b }, abortCtrl.signal);
 
@@ -606,6 +633,11 @@
         const mt = txt.match(/less than or equal to (\d+)/i);
         if (/temperature/i.test(txt) && 'temperature' in body) {
           delete body.temperature;
+        } else if (/max_completion_tokens/i.test(txt) && 'max_tokens' in body) {
+          body.max_completion_tokens = body.max_tokens;
+          delete body.max_tokens;
+          settings.useMaxCompletion = true;
+          persist();
         } else if (/max_tokens/i.test(txt) && mt) {
           body.max_tokens = Number(mt[1]);
           settings.maxTokens = body.max_tokens;
@@ -697,6 +729,7 @@
 
     const asst = { role: 'assistant', text: '', streaming: true, time: Date.now() };
     c.messages.push(asst);
+    followStream = true;
     renderAll();
     await runCompletion(c, asst);
   }

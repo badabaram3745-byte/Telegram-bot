@@ -103,3 +103,7 @@ input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
 .ring-bg{fill:none;stroke:rgba(255,255,255,.25);stroke-width:4}
 .ring-fg{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .2s}
 .ring span{position:relative}
+
+.main{position:relative}
+.to-bottom{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:5;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:20px;line-height:1;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center}
+.to-bottom[hidden]{display:none}
